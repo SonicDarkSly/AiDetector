@@ -27,7 +27,8 @@ const CATEGORY_ICONS: Record<SignalCategory, ReactNode> = {
   stats: <BarChartOutlined />,
 };
 
-const ORDER: SignalCategory[] = ['metadata', 'artefact', 'unicode', 'model', 'code', 'style', 'stats'];
+const TECHNICAL: SignalCategory[] = ['metadata', 'artefact', 'unicode'];
+const INDICATORS: SignalCategory[] = ['model', 'code', 'style', 'stats'];
 
 function DirectionIcon({ s }: { s: Signal }) {
   if (s.direction === 'ia')
@@ -97,50 +98,77 @@ function SignalItem({ s }: { s: Signal }) {
   );
 }
 
+function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[] }) {
+  const groups = order
+    .map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) }))
+    .filter((g) => g.items.length > 0);
+  return (
+    <Collapse
+      bordered={false}
+      ghost
+      defaultActiveKey={groups.map((g) => g.cat)}
+      items={groups.map(({ cat, items }) => {
+        const ia = items.filter((s) => s.direction === 'ia').length;
+        const hu = items.filter((s) => s.direction === 'humain').length;
+        return {
+          key: cat,
+          label: (
+            <Flex justify="space-between" align="center" wrap gap={6}>
+              <span>
+                {CATEGORY_ICONS[cat]} <Text strong>{CATEGORY_LABELS[cat]}</Text>{' '}
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                  {CATEGORY_HINTS[cat]}
+                </Text>
+              </span>
+              <span>
+                {ia > 0 && <Tag color="red">{ia} IA</Tag>}
+                {hu > 0 && <Tag color="green">{hu} humain</Tag>}
+              </span>
+            </Flex>
+          ),
+          children: items.map((s) => <SignalItem key={s.id} s={s} />),
+        };
+      })}
+    />
+  );
+}
+
 export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
   const main = all.filter(
     (s) => s.direction !== 'neutre' && (s.strength === 'fort' || s.strength === 'moyen'),
   );
   const signals = mainOnly && main.length > 0 ? main : all;
-  const groups = ORDER.map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) })).filter(
-    (g) => g.items.length > 0,
-  );
-  if (groups.length === 0) {
+  const technical = signals.filter((s) => TECHNICAL.includes(s.category));
+  const indicators = signals.filter((s) => INDICATORS.includes(s.category));
+  if (technical.length === 0 && indicators.length === 0) {
     return (
       <Card size="small" title="Indices détectés">
         <Empty description="Aucun indice relevé." />
       </Card>
     );
   }
+  const proofs = technical.filter((s) => s.direction === 'ia' && s.points > 0).length;
   return (
     <Card size="small" title="Indices détectés" styles={{ body: { padding: 0 } }}>
-      <Collapse
-        bordered={false}
-        ghost
-        defaultActiveKey={groups.map((g) => g.cat)}
-        items={groups.map(({ cat, items }) => {
-          const ia = items.filter((s) => s.direction === 'ia').length;
-          const hu = items.filter((s) => s.direction === 'humain').length;
-          return {
-            key: cat,
-            label: (
-              <Flex justify="space-between" align="center" wrap gap={6}>
-                <span>
-                  {CATEGORY_ICONS[cat]} <Text strong>{CATEGORY_LABELS[cat]}</Text>{' '}
-                  <Text type="secondary" style={{ fontSize: 11 }}>
-                    {CATEGORY_HINTS[cat]}
-                  </Text>
-                </span>
-                <span>
-                  {ia > 0 && <Tag color="red">{ia} IA</Tag>}
-                  {hu > 0 && <Tag color="green">{hu} humain</Tag>}
-                </span>
-              </Flex>
-            ),
-            children: items.map((s) => <SignalItem key={s.id} s={s} />),
-          };
-        })}
-      />
+      <div className="signal-section technical">
+        <span>Preuves techniques</span>
+        {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
+      </div>
+      {technical.length > 0 ? (
+        <Groups signals={technical} order={TECHNICAL} />
+      ) : (
+        <Text type="secondary" style={{ display: 'block', padding: '10px 16px', fontSize: 13 }}>
+          Aucune trace technique : ni métadonnée d'IA, ni artefact de chatbot, ni caractère caché.
+        </Text>
+      )}
+      {indicators.length > 0 && (
+        <>
+          <div className="signal-section">
+            <span>Indices statistiques et de style</span>
+          </div>
+          <Groups signals={indicators} order={INDICATORS} />
+        </>
+      )}
     </Card>
   );
 }

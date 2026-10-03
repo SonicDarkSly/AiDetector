@@ -89,27 +89,23 @@ body {
   font-size: 12.5px;
 }
 
-.proof-list {
-  list-style: none;
-  margin: 2px 0 6px;
-  padding: 8px 10px;
-  border-radius: 8px;
-  background: rgba(245, 34, 45, 0.05);
-  border: 1px solid rgba(245, 34, 45, 0.18);
-}
-.proof-list li + li {
-  margin-top: 6px;
-}
-.proof-evidence {
-  margin: 2px 0 0 2px;
+.signal-section {
   display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(127, 127, 127, 0.07);
+  border-top: 1px solid rgba(127, 127, 127, 0.14);
+  border-bottom: 1px solid rgba(127, 127, 127, 0.14);
 }
-.proof-evidence code {
-  font-size: 11px;
-  padding: 1px 6px;
-  border-radius: 4px;
-  background: rgba(127, 127, 127, 0.12);
-  word-break: break-all;
+.signal-section:first-child {
+  border-top: none;
+}
+.signal-section.technical {
+  background: rgba(245, 34, 45, 0.07);
 }
