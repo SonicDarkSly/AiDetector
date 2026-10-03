@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Flex, Tag, Tooltip, Typography } from 'antd';
+import { Flex, Spin, Tag, Tooltip, Typography } from 'antd';
 import { ThunderboltFilled } from '@ant-design/icons';
+import { activityLabel, useModelActivity } from '../hooks/useModelActivity';
 import { api } from '../api';
 import { IA_GRADIENT } from '../constants';
 import type { LanguageModelInfo } from '../types';
@@ -32,15 +33,16 @@ function size(bytes: number | null): string | null {
   return bytes >= 1e9 ? `${(bytes / 1e9).toFixed(2).replace('.', ',')} Go` : `${Math.round(bytes / 1e6)} Mo`;
 }
 
-export function ModelBadge({ refreshKey }: { refreshKey: unknown }) {
+export function ModelBadge({ busy }: { busy: boolean }) {
   const [info, setInfo] = useState<LanguageModelInfo | null>(null);
+  const activity = useModelActivity(busy);
 
   useEffect(() => {
     api
       .model()
       .then(setInfo)
       .catch(() => setInfo(null));
-  }, [refreshKey]);
+  }, [busy]);
 
   if (!info) return null;
   const status = STATUS[info.status];
@@ -81,15 +83,30 @@ export function ModelBadge({ refreshKey }: { refreshKey: unknown }) {
           >
             Analyse IA locale
           </Text>
-          <Tooltip title={status.hint}>
-            <Tag color={status.color} style={{ marginInlineEnd: 0, cursor: 'help' }}>
-              {status.label}
+          {activity ? (
+            <Tag color="processing" style={{ marginInlineEnd: 0 }}>
+              <Spin size="small" style={{ marginRight: 6 }} />
+              {activityLabel(activity)}
             </Tag>
-          </Tooltip>
+          ) : (
+            <Tooltip title={status.hint}>
+              <Tag color={status.color} style={{ marginInlineEnd: 0, cursor: 'help' }}>
+                {status.label}
+              </Tag>
+            </Tooltip>
+          )}
         </Flex>
         <Text type="secondary" style={{ fontSize: 11.5, display: 'block' }}>
           Modèle : {info.name ?? 'aucun'}
           {specs.length > 0 && ` · ${specs.join(' · ')}`}
+        </Text>
+        <Text type="secondary" style={{ fontSize: 11.5, display: 'block' }}>
+          Utilisé pour la prévisibilité des textes collés et de la prose des PDF et Word, dès {info.minTokens}{' '}
+          tokens. Pas pour le code, ni pour les métadonnées et les traces techniques, vérifiées sans IA. Seul
+          modèle de l&apos;application, chargé à la demande.
+        </Text>
+        <Text type="warning" style={{ fontSize: 11.5, display: 'block', marginTop: 2 }}>
+          Une IA peut se tromper : son résultat est une indication, pas une preuve.
         </Text>
       </div>
     </Flex>

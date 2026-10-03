@@ -14,6 +14,8 @@ import {
 import type { CSSProperties, ReactNode } from 'react';
 import type { Signal, SignalCategory } from '../types';
 import { CATEGORY_HINTS, CATEGORY_LABELS, STRENGTH_COLORS, STRENGTH_LABELS } from '../constants';
+import { useFold } from '../hooks/useFold';
+import { FoldChevron } from './FoldChevron';
 
 const { Text, Paragraph } = Typography;
 
@@ -151,24 +153,25 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
   );
 }
 
-function SectionHeader({ kind, children }: { kind: SectionKind; children: ReactNode }) {
+function Section({
+  kind,
+  title,
+  extra,
+  children,
+}: {
+  kind: SectionKind;
+  title: string;
+  extra?: ReactNode;
+  children: ReactNode;
+}) {
   const dark = useDark();
+  const [folded, toggle] = useFold(`signals-${kind}`);
   const { rgb } = ACCENTS[kind];
-  const style: CSSProperties = {
+  const header: CSSProperties = {
     background: `linear-gradient(90deg, rgba(${rgb}, ${dark ? 0.22 : 0.12}), rgba(${rgb}, ${dark ? 0.06 : 0.03}))`,
     color: dark ? ACCENTS[kind].dark : ACCENTS[kind].light,
-    borderBottom: `1px solid rgba(${rgb}, ${dark ? 0.3 : 0.25})`,
+    borderBottom: folded ? 'none' : `1px solid rgba(${rgb}, ${dark ? 0.3 : 0.25})`,
   };
-  return (
-    <div className="signal-section" style={style}>
-      {children}
-    </div>
-  );
-}
-
-function Section({ kind, children }: { kind: SectionKind; children: ReactNode }) {
-  const dark = useDark();
-  const { rgb } = ACCENTS[kind];
   return (
     <div
       className="signal-panel"
@@ -177,7 +180,19 @@ function Section({ kind, children }: { kind: SectionKind; children: ReactNode })
         background: `rgba(${rgb}, ${dark ? 0.03 : 0.015})`,
       }}
     >
-      {children}
+      <button
+        type="button"
+        className="signal-section"
+        style={header}
+        onClick={toggle}
+        aria-expanded={!folded}
+      >
+        <span>
+          <FoldChevron folded={folded} /> {title}
+        </span>
+        {extra}
+      </button>
+      {!folded && children}
     </div>
   );
 }
@@ -205,11 +220,11 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
         body: { padding: 12, display: 'flex', flexDirection: 'column', gap: 12 },
       }}
     >
-      <Section kind="technical">
-        <SectionHeader kind="technical">
-          <span>Preuves techniques</span>
-          {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
-        </SectionHeader>
+      <Section
+        kind="technical"
+        title="Preuves techniques"
+        extra={proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
+      >
         {technical.length > 0 ? (
           <Groups signals={technical} order={TECHNICAL} />
         ) : (
@@ -219,10 +234,11 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
         )}
       </Section>
       {indicators.length > 0 && (
-        <Section kind="indicators">
-          <SectionHeader kind="indicators">
-            <span>Indices statistiques et de style</span>
-          </SectionHeader>
+        <Section
+          kind="indicators"
+          title="Indices statistiques et de style"
+          extra={<Tag>{indicators.length} indice(s)</Tag>}
+        >
           <Groups signals={indicators} order={INDICATORS} />
         </Section>
       )}

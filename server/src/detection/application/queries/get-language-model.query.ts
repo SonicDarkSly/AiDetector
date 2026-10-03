@@ -4,6 +4,7 @@ import {
   LIKELIHOOD_SCORER,
   type LanguageModelInfo,
   type LikelihoodScorer,
+  type ModelActivity,
 } from '../../domain/likelihood/likelihood-scorer.js';
 
 export class GetLanguageModelQuery {}
@@ -14,5 +15,16 @@ export class GetLanguageModelHandler implements IQueryHandler<GetLanguageModelQu
 
   execute(): Promise<LanguageModelInfo> {
     return this.scorer.describe();
+  }
+}
+
+export class GetModelActivityQuery {}
+
+@QueryHandler(GetModelActivityQuery)
+export class GetModelActivityHandler implements IQueryHandler<GetModelActivityQuery, ModelActivity | null> {
+  constructor(@Inject(LIKELIHOOD_SCORER) private readonly scorer: LikelihoodScorer) {}
+
+  execute(): Promise<ModelActivity | null> {
+    return Promise.resolve(this.scorer.activity());
   }
 }

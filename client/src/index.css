@@ -90,6 +90,11 @@ body {
 }
 
 .signal-section {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -131,6 +136,16 @@ body {
   color: rgba(255, 255, 255, 0.78);
 }
 
+.origin-subtitle {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+}
 .origin-subtitle.spaced {
   margin-top: 6px;
   padding-top: 12px;
@@ -363,4 +378,113 @@ body {
   color: rgba(127, 127, 127, 0.95);
   border: 1px dashed rgba(127, 127, 127, 0.4);
   border-top: none;
+}
+
+.verdict-card {
+  display: flex;
+  flex-direction: column;
+}
+.verdict-card > .ant-card-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  container-type: inline-size;
+}
+.verdict-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+.verdict-info {
+  flex: 1;
+  min-width: 0;
+}
+.verdict-tags {
+  margin: 8px 0;
+}
+.verdict-value {
+  font-size: 34px;
+}
+.verdict-footer {
+  display: block;
+  margin-top: 10px;
+  font-size: 11px;
+}
+@container (max-width: 560px) {
+  .verdict-main {
+    flex-direction: column;
+    justify-content: center;
+    gap: 12px;
+  }
+  .verdict-main > .ant-progress .ant-progress-inner {
+    width: 190px !important;
+    height: 190px !important;
+  }
+  .verdict-value {
+    font-size: 46px;
+  }
+  .verdict-info {
+    flex: none;
+    width: 100%;
+    text-align: center;
+  }
+  .verdict-tags {
+    justify-content: center;
+  }
+  .verdict-bars {
+    text-align: left;
+    margin-top: 4px;
+  }
+  .verdict-footer {
+    text-align: center;
+  }
+}
+
+.fold-chevron {
+  font-size: 10px;
+  margin-right: 2px;
+  transition: transform 0.2s;
+}
+.fold-chevron.open {
+  transform: rotate(90deg);
+}
+
+.hl-tip {
+  max-width: 340px;
+  font-size: 12px;
+}
+.hl-tip-points {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.hl-tip-detail {
+  margin-top: 4px;
+  opacity: 0.85;
+  line-height: 1.45;
+}
+
+.analysis-model {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 11.5px;
+  background: rgba(124, 58, 237, 0.08);
+  color: #7c3aed;
+}
+.analysis-overlay.dark .analysis-model {
+  background: rgba(167, 139, 250, 0.12);
+  color: #c4b5fd;
+}
+
+.verdict-disclaimer {
+  margin-top: 12px;
+  padding: 6px 10px;
+  font-size: 11.5px;
+}
+.ant-tooltip:has(.hl-tip) {
+  max-width: 360px;
 }

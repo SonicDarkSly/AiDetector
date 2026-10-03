@@ -125,7 +125,7 @@ export function InputPanel({ loading, dark, onText, onFile }: Props) {
           ]}
         />
         <div className="model-footer">
-          <ModelBadge refreshKey={loading} />
+          <ModelBadge busy={loading} />
         </div>
       </Card>
     </div>

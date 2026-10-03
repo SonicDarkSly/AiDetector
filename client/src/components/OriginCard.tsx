@@ -2,6 +2,8 @@ import { Card, Flex, Progress, Tag, Tooltip, Typography } from 'antd';
 import { RobotOutlined, ToolOutlined } from '@ant-design/icons';
 import type { AnalysisReport, OriginScore } from '../types';
 import { PRIMARY, VENDOR_COLORS } from '../constants';
+import { useFold } from '../hooks/useFold';
+import { FoldChevron } from './FoldChevron';
 
 const { Text } = Typography;
 
@@ -67,26 +69,41 @@ function Row({ o }: { o: OriginScore }) {
   );
 }
 
-function SubTitle({
+function Fold({
+  id,
   icon,
   title,
-  children,
+  hint,
   spaced = false,
+  children,
 }: {
+  id: string;
   icon: React.ReactNode;
   title: string;
-  children: React.ReactNode;
+  hint: React.ReactNode;
   spaced?: boolean;
+  children: React.ReactNode;
 }) {
+  const [folded, toggle] = useFold(`origins-${id}`);
   return (
-    <div className={spaced ? 'origin-subtitle spaced' : 'origin-subtitle'}>
-      <Text strong style={{ fontSize: 12 }}>
-        {icon} {title}
-      </Text>
-      <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
-        {children}
-      </Text>
-    </div>
+    <>
+      <button
+        type="button"
+        className={spaced ? 'origin-subtitle spaced' : 'origin-subtitle'}
+        onClick={toggle}
+        aria-expanded={!folded}
+      >
+        <Text strong style={{ fontSize: 12 }}>
+          <FoldChevron folded={folded} /> {icon} {title}
+        </Text>
+        {!folded && (
+          <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
+            {hint}
+          </Text>
+        )}
+      </button>
+      {!folded && children}
+    </>
   );
 }
 
@@ -172,10 +189,12 @@ export function OriginCard({ report, compact = false }: { report: AnalysisReport
     >
       <Flex vertical gap={10}>
         {(report.source.kind !== 'text' || shownTools.length > 0) && (
-          <>
-            <SubTitle icon={<ToolOutlined />} title="Logiciels">
-              Certitude d'après les métadonnées du fichier.
-            </SubTitle>
+          <Fold
+            id="software"
+            icon={<ToolOutlined />}
+            title="Logiciels"
+            hint="Certitude d'après les métadonnées du fichier."
+          >
             {shownTools.length > 0 ? (
               shownTools.map((o) => <Row key={o.id} o={o} />)
             ) : (
@@ -183,34 +202,35 @@ export function OriginCard({ report, compact = false }: { report: AnalysisReport
                 Aucun logiciel identifié dans les métadonnées.
               </Text>
             )}
-          </>
+          </Fold>
         )}
-        <SubTitle
+        <Fold
+          id="assistants"
           icon={<RobotOutlined />}
           title="Assistants IA"
+          hint={`Part de la probabilité IA globale. ${note}`}
           spaced={report.source.kind !== 'text' || shownTools.length > 0}
         >
-          Part de la probabilité IA globale. {note}
-        </SubTitle>
-        {shownIdentified.map((o) => (
-          <Row key={o.id} o={o} />
-        ))}
-        {others.length > 0 && othersTotal === 0 && identified.length > 0 && !compact && (
-          <Text type="secondary" style={{ fontSize: 11 }}>
-            Sans trace, à 0 % : {others.map((o) => o.label).join(', ')}
-          </Text>
-        )}
-        {others.length > 0 &&
-          !(othersTotal === 0 && identified.length > 0) &&
-          (!compact || (othersTotal ?? 0) > 0) && (
-            <Pooled
-              items={others}
-              total={othersTotal}
-              title={
-                identified.length === 0 ? 'Assistant IA non identifiable' : 'Autres assistants, sans trace'
-              }
-            />
+          {shownIdentified.map((o) => (
+            <Row key={o.id} o={o} />
+          ))}
+          {others.length > 0 && othersTotal === 0 && identified.length > 0 && !compact && (
+            <Text type="secondary" style={{ fontSize: 11 }}>
+              Sans trace, à 0 % : {others.map((o) => o.label).join(', ')}
+            </Text>
           )}
+          {others.length > 0 &&
+            !(othersTotal === 0 && identified.length > 0) &&
+            (!compact || (othersTotal ?? 0) > 0) && (
+              <Pooled
+                items={others}
+                total={othersTotal}
+                title={
+                  identified.length === 0 ? 'Assistant IA non identifiable' : 'Autres assistants, sans trace'
+                }
+              />
+            )}
+        </Fold>
       </Flex>
     </Card>
   );

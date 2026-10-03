@@ -116,7 +116,7 @@ Monorepo npm (`server`, `client`).
   - `detection/presentation` : API HTTP
 - `client` : React 18, Vite 6, Ant Design 5
 
-API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET /api/reports`,
+API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET /api/model/activity`, `GET /api/reports`,
 `GET /api/reports/:id`, `DELETE /api/reports/:id`, `DELETE /api/reports`, `GET /api/health`.
 
 Les analyses sont conservées dans `server/data/reports` (200 au maximum).

@@ -7,7 +7,10 @@ import { DeleteAnalysisHandler } from './application/commands/delete-analysis.co
 import { AnalysisCompletedHandler } from './application/events/analysis-completed.handler.js';
 import { GetAnalysisHandler } from './application/queries/get-analysis.query.js';
 import { GetHistoryHandler } from './application/queries/get-history.query.js';
-import { GetLanguageModelHandler } from './application/queries/get-language-model.query.js';
+import {
+  GetLanguageModelHandler,
+  GetModelActivityHandler,
+} from './application/queries/get-language-model.query.js';
 import { ANALYSIS_REPOSITORY } from './domain/analysis.repository.js';
 import { Analyzer } from './domain/analyzer.js';
 import { ArtefactDetector } from './domain/detectors/artefact.detector.js';
@@ -53,6 +56,7 @@ import { AnalysisController } from './presentation/analysis.controller.js';
     GetHistoryHandler,
     GetAnalysisHandler,
     GetLanguageModelHandler,
+    GetModelActivityHandler,
     AnalysisCompletedHandler,
   ],
 })

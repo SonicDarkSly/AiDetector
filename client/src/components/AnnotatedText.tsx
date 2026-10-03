@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
-import { Alert, Button, Card, Flex, Space, Switch, Tag, Typography, message } from 'antd';
+import { Alert, Button, Card, Flex, Space, Switch, Tag, Tooltip, Typography, message } from 'antd';
 import { CopyOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ReactNode } from 'react';
-import type { AnalysisReport } from '../types';
+import type { AnalysisReport, Signal } from '../types';
+import { STRENGTH_COLORS, STRENGTH_LABELS } from '../constants';
 import { copyText, downloadText } from '../utils/clipboard';
 
 const { Text } = Typography;
@@ -75,14 +76,18 @@ function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactN
   for (const m of s.matchAll(INVISIBLE_RE)) {
     const idx = m.index ?? 0;
     if (idx > last) out.push(s.slice(last, idx));
+    const hidden = isTagRun(m[0]);
     out.push(
-      <span
+      <Tooltip
         key={`${keyBase}-i${i++}`}
-        className={isTagRun(m[0]) ? 'hidden-message' : 'invisible-char'}
-        title={isTagRun(m[0]) ? 'Message caché en caractères « tags »' : 'Caractère invisible'}
+        title={
+          hidden
+            ? 'Message caché en caractères « tags » Unicode, invisible à l\u2019écran et décodé ici.'
+            : `Caractère invisible ${invisibleName(m[0])} : absent à l\u2019écran, souvent laissé par un copier-coller.`
+        }
       >
-        {invisibleName(m[0])}
-      </span>,
+        <span className={hidden ? 'hidden-message' : 'invisible-char'}>{invisibleName(m[0])}</span>
+      </Tooltip>,
     );
     last = idx + m[0].length;
   }
@@ -90,12 +95,31 @@ function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactN
   return out;
 }
 
+function SignalTip({ signal, id }: { signal?: Signal; id: string }) {
+  if (!signal) return <span>{id}</span>;
+  const human = signal.direction === 'humain';
+  return (
+    <div className="hl-tip">
+      <Flex gap={6} align="center" wrap>
+        <strong>{signal.label}</strong>
+        <Tag color={human ? 'green' : STRENGTH_COLORS[signal.strength]} style={{ marginInlineEnd: 0 }}>
+          {human ? 'marque humaine' : STRENGTH_LABELS[signal.strength]}
+        </Tag>
+        {signal.points !== 0 && (
+          <span className="hl-tip-points">{signal.points > 0 ? `+${signal.points}` : signal.points} pts</span>
+        )}
+      </Flex>
+      <div className="hl-tip-detail">{signal.detail}</div>
+    </div>
+  );
+}
+
 export function AnnotatedText({ report }: { report: AnalysisReport }) {
   const boxClass = `annotated ${report.source.kind === 'code' ? 'code' : ''}`;
   const [showInvisible, setShowInvisible] = useState(true);
   const [showClean, setShowClean] = useState(false);
   const [showTags, setShowTags] = useState(true);
-  const labels = useMemo(() => new Map(report.signals.map((s) => [s.id, s.label])), [report.signals]);
+  const signals = useMemo(() => new Map(report.signals.map((s) => [s.id, s])), [report.signals]);
   const human = useMemo(
     () => new Set(report.signals.filter((s) => s.direction === 'humain').map((s) => s.id)),
     [report.signals],
@@ -109,27 +133,27 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
       if (h.start < pos) return;
       if (h.start > pos) nodes.push(...renderChunk(text.slice(pos, h.start), showInvisible, `t${n}`));
       nodes.push(
-        <span key={`h${n}`} className={`hl hl-${h.level}`} title={labels.get(h.signalId) ?? h.signalId}>
-          {renderChunk(text.slice(h.start, h.end), showInvisible, `h${n}`)}
-        </span>,
+        <Tooltip key={`h${n}`} title={<SignalTip signal={signals.get(h.signalId)} id={h.signalId} />}>
+          <span className={`hl hl-${h.level}`}>
+            {renderChunk(text.slice(h.start, h.end), showInvisible, `h${n}`)}
+          </span>
+        </Tooltip>,
       );
       const tag = TAGS[h.signalId];
       if (showTags && tag && h.level !== 'info' && (h.level !== 'faible' || !h.signalId.startsWith('sty-'))) {
         nodes.push(
-          <span
-            key={`g${n}`}
-            className={`hl-tag ${human.has(h.signalId) ? 'hl-tag-human' : `hl-tag-${h.level}`}`}
-            title={labels.get(h.signalId) ?? h.signalId}
-          >
-            {tag}
-          </span>,
+          <Tooltip key={`g${n}`} title={<SignalTip signal={signals.get(h.signalId)} id={h.signalId} />}>
+            <span className={`hl-tag ${human.has(h.signalId) ? 'hl-tag-human' : `hl-tag-${h.level}`}`}>
+              {tag}
+            </span>
+          </Tooltip>,
         );
       }
       pos = h.end;
     });
     if (pos < text.length) nodes.push(...renderChunk(text.slice(pos), showInvisible, 'end'));
     return nodes;
-  }, [report, showInvisible, showTags, labels, human]);
+  }, [report, showInvisible, showTags, signals, human]);
 
   const cleaned = report.cleaned;
   const baseName = (report.source.filename ?? 'texte').replace(/\.[^.]+$/, '');

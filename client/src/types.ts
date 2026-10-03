@@ -80,6 +80,13 @@ export interface LanguageModelUsage {
   elapsedMs?: number;
 }
 
+export interface ModelActivity {
+  phase: 'loading' | 'measuring';
+  model: string;
+  tokens: number | null;
+  since: number;
+}
+
 export interface LanguageModelInfo {
   name: string | null;
   status: 'ready' | 'idle' | 'missing' | 'disabled' | 'error';
@@ -87,6 +94,7 @@ export interface LanguageModelInfo {
   quantization: string | null;
   sizeBytes: number | null;
   maxTokens: number;
+  minTokens: number;
   contextSize: number;
 }
 

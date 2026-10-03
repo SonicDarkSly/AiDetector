@@ -1,11 +1,13 @@
 import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
 import { readFileSync, statSync } from 'node:fs';
 import { LLM_DIR, LLM_MODELS_FILE } from '../../../shared/config/paths.js';
+import { CALIBRATION } from '../../domain/likelihood/calibration.js';
 import type {
   LanguageModelInfo,
   LikelihoodMeasure,
   LikelihoodScorer,
   LikelihoodStatus,
+  ModelActivity,
 } from '../../domain/likelihood/likelihood-scorer.js';
 
 const MAX_TOKENS = 400;
@@ -32,10 +34,15 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
   private loading: Promise<Loaded | null> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private idleTimer: NodeJS.Timeout | null = null;
+  private current: ModelActivity | null = null;
   private state: LikelihoodStatus = process.env.MEFIANCE_MODEL === 'off' ? 'disabled' : 'idle';
 
   status(): LikelihoodStatus {
     return this.state;
+  }
+
+  activity(): ModelActivity | null {
+    return this.current;
   }
 
   async describe(): Promise<LanguageModelInfo> {
@@ -74,6 +81,7 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
           ?.match(/^Q\w+$/i)?.[0] ?? null,
       sizeBytes,
       maxTokens: MAX_TOKENS,
+      minTokens: CALIBRATION.minTokens,
       contextSize: CONTEXT_SIZE,
     };
   }
@@ -96,12 +104,24 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
   }
 
   private async run(text: string): Promise<LikelihoodMeasure | null> {
+    try {
+      return await this.evaluate(text);
+    } finally {
+      this.current = null;
+    }
+  }
+
+  private async evaluate(text: string): Promise<LikelihoodMeasure | null> {
+    if (this.state !== 'ready') {
+      this.current = { phase: 'loading', model: this.modelName() ?? '', tokens: null, since: Date.now() };
+    }
     const loaded = await this.load();
     if (!loaded) return null;
     this.scheduleUnload();
     const started = Date.now();
     const tokens: number[] = loaded.model.tokenize(text).slice(0, MAX_TOKENS);
     if (tokens.length < 8) return null;
+    this.current = { phase: 'measuring', model: loaded.name, tokens: tokens.length, since: Date.now() };
 
     const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE });
     try {

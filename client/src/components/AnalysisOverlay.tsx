@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Typography } from 'antd';
+import { Spin, Typography } from 'antd';
 import { Logo } from './Logo';
+import { activityLabel, useModelActivity } from '../hooks/useModelActivity';
 
 const { Text } = Typography;
 
@@ -13,6 +14,7 @@ const STEPS = [
 
 export function AnalysisOverlay({ open, dark }: { open: boolean; dark: boolean }) {
   const [step, setStep] = useState(0);
+  const activity = useModelActivity(open);
 
   useEffect(() => {
     if (!open) return;
@@ -32,8 +34,17 @@ export function AnalysisOverlay({ open, dark }: { open: boolean; dark: boolean }
           Analyse en cours…
         </Text>
         <Text type="secondary" style={{ fontSize: 12 }}>
-          {STEPS[step]}
+          {activity ? activityLabel(activity) : STEPS[step]}
         </Text>
+        {activity && (
+          <div className="analysis-model">
+            <Spin size="small" />
+            <span>
+              {activity.model}
+              {activity.phase === 'loading' ? ' : quelques secondes au premier usage' : ' au travail'}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

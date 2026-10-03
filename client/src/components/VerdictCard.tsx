@@ -1,4 +1,4 @@
-import { Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
+import { Alert, Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { AnalysisReport } from '../types';
 import { KIND_LABELS, LANGUAGE_LABELS, MEASURED_RATES, scoreColor } from '../constants';
@@ -13,8 +13,8 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
   const color = undetermined ? '#8c8c8c' : scoreColor(report.score);
   const { source, stats } = report;
   return (
-    <Card>
-      <Flex gap={20} align="center" wrap>
+    <Card className="verdict-card">
+      <div className="verdict-main">
         <Progress
           type="dashboard"
           percent={undetermined ? 0 : report.score}
@@ -23,23 +23,27 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           format={(p) =>
             undetermined ? (
               <span style={{ color }}>
-                <span style={{ fontSize: 40, fontWeight: 700 }}>?</span>
+                <span className="verdict-value" style={{ fontWeight: 700 }}>
+                  ?
+                </span>
                 <div style={{ fontSize: 11, opacity: 0.85, marginTop: 2 }}>indéterminable</div>
               </span>
             ) : (
               <span style={{ color }}>
-                <span style={{ fontSize: 34, fontWeight: 700 }}>{p}</span>
+                <span className="verdict-value" style={{ fontWeight: 700 }}>
+                  {p}
+                </span>
                 <span style={{ fontSize: 16 }}> %</span>
                 <div style={{ fontSize: 11, opacity: 0.75, marginTop: 2 }}>score IA</div>
               </span>
             )
           }
         />
-        <div style={{ flex: 1, minWidth: 220 }}>
+        <div className="verdict-info">
           <Title level={4} style={{ margin: 0, color }}>
             {report.verdict}
           </Title>
-          <Space size={6} wrap style={{ margin: '8px 0' }}>
+          <Space size={6} wrap className="verdict-tags">
             <Tooltip title="Élevée = au moins une trace technique forte. Faible = uniquement des indices de style.">
               <Tag icon={<SafetyCertificateOutlined />} color={CONFIDENCE_COLORS[report.confidence]}>
                 Confiance {report.confidence}
@@ -54,7 +58,7 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
             {report.summary}
           </Paragraph>
           {undetermined && report.modelScore != null && <Trend score={report.modelScore} />}
-          <Flex vertical gap={4}>
+          <Flex vertical gap={4} className="verdict-bars">
             <Tooltip title="Métadonnées, artefacts de copier-coller, caractères cachés : des traces concrètes, fiables quand elles existent.">
               <div>
                 <Text style={{ fontSize: 12 }}>Preuves techniques</Text>
@@ -93,8 +97,21 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
             </Tooltip>
           </Flex>
         </div>
-      </Flex>
-      <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 10 }}>
+      </div>
+      {report.modelScore != null && report.languageModel?.name && (
+        <Alert
+          type="warning"
+          showIcon
+          className="verdict-disclaimer"
+          message={
+            <span>
+              Une IA peut se tromper : la prévisibilité est mesurée par {report.languageModel.name}. Ce
+              résultat est une indication, pas une preuve.
+            </span>
+          }
+        />
+      )}
+      <Text type="secondary" className="verdict-footer">
         Analysé le {formatDate(report.analyzedAt)} · {formatSize(source.size)} · {stats.words} mots ·{' '}
         {LANGUAGE_LABELS[stats.language]}
       </Text>

@@ -12,6 +12,14 @@ export interface LikelihoodScorer {
   status(): LikelihoodStatus;
   modelName(): string | null;
   describe(): Promise<LanguageModelInfo>;
+  activity(): ModelActivity | null;
+}
+
+export interface ModelActivity {
+  phase: 'loading' | 'measuring';
+  model: string;
+  tokens: number | null;
+  since: number;
 }
 
 export interface LanguageModelInfo {
@@ -21,6 +29,7 @@ export interface LanguageModelInfo {
   quantization: string | null;
   sizeBytes: number | null;
   maxTokens: number;
+  minTokens: number;
   contextSize: number;
 }
 
