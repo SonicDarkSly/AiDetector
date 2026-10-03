@@ -12,6 +12,7 @@ export type Vendor =
   | 'deepseek'
   | 'grok'
   | 'meta'
+  | 'qwen'
   | 'script';
 
 export interface Signal {
@@ -58,6 +59,7 @@ export interface VendorScore {
   vendor: Vendor;
   label: string;
   score: number;
+  level?: 'trace' | 'indice' | 'aucun';
   reasons: string[];
 }
 

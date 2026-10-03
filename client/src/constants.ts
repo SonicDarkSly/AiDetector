@@ -61,6 +61,7 @@ export const VENDOR_COLORS: Record<Vendor, string> = {
   deepseek: '#4d6bfe',
   grok: '#595959',
   meta: '#0866ff',
+  qwen: '#615ced',
   script: '#722ed1',
 };
 

@@ -6,7 +6,7 @@ import type {
   SignalDetector,
   Strength,
 } from '../signal/signal.js';
-import { vendorOf, type VendorHint } from '../signal/vendor.js';
+import { vendorOf, type Vendor, type VendorHint } from '../signal/vendor.js';
 import { scan } from './text-scan.js';
 
 interface ArtefactRule {
@@ -76,6 +76,74 @@ const RULES: ArtefactRule[] = [
     vendors: [{ vendor: 'claude', weight: 3 }],
   },
   {
+    id: 'art-deepseek-cite',
+    re: /\[citation:\s?\d+\]/g,
+    label: 'Marqueurs [citation:n] (DeepSeek)',
+    detail: 'Format des références de la recherche web de DeepSeek, resté dans le texte copié.',
+    strength: 'fort',
+    points: 45,
+    vendors: [{ vendor: 'deepseek', weight: 3 }],
+  },
+  {
+    id: 'art-think',
+    re: /<\/?think>/g,
+    label: 'Balises de raisonnement <think> (DeepSeek-R1, Qwen…)',
+    detail:
+      'Les modèles « à raisonnement » ouverts (DeepSeek-R1, Qwen QwQ / Qwen3) écrivent leur réflexion entre ces balises. Les retrouver signe un copier-coller brut de leur sortie.',
+    strength: 'fort',
+    points: 45,
+    vendors: [
+      { vendor: 'deepseek', weight: 2 },
+      { vendor: 'qwen', weight: 2 },
+    ],
+  },
+  {
+    id: 'art-copilot-cite',
+    re: /\[\^\d+\^\]/g,
+    label: 'Notes [^n^] (Copilot / Bing Chat)',
+    detail: 'Format des renvois aux sources de Copilot (ex-Bing Chat), resté dans le texte copié.',
+    strength: 'fort',
+    points: 40,
+    vendors: [{ vendor: 'copilot', weight: 3 }],
+  },
+  {
+    id: 'art-grok-render',
+    re: /<\/?grok:render[^>]*>|<argument name="citation_id">/g,
+    label: 'Balises internes de Grok',
+    detail: 'Balises de citation de Grok (xAI) restées dans le texte copié.',
+    strength: 'fort',
+    points: 45,
+    vendors: [{ vendor: 'grok', weight: 3 }],
+  },
+  {
+    id: 'art-numeric-cites',
+    re: /(?:\[\d{1,2}\]){2,}/g,
+    label: 'Renvois numérotés collés [1][2]',
+    detail:
+      'Renvois aux sources enchaînés, format de Perplexity (et des moteurs de réponse). Aussi utilisé sur Wikipédia : indice faible.',
+    strength: 'faible',
+    points: 6,
+    min: 2,
+    vendors: [{ vendor: 'perplexity', weight: 1 }],
+  },
+  {
+    id: 'art-share-link',
+    re: /(?:chatgpt\.com|chat\.openai\.com)\/(?:share|c)\/[\w-]+|(?:gemini\.google\.com\/(?:share|app)|g\.co\/gemini\/share)\/[\w-]+|claude\.ai\/(?:share|chat)\/[\w-]+|chat\.deepseek\.com\/[\w\/-]+|perplexity\.ai\/(?:search|page)\/[\w-]+|grok\.com\/(?:share|chat)\/[\w-]+|x\.com\/i\/grok[\w\/?=-]*|copilot\.microsoft\.com\/[\w\/-]+|chat\.mistral\.ai\/[\w\/-]+|(?:www\.)?meta\.ai\/[\w\/-]+|chat\.qwen\.ai\/[\w\/-]+/gi,
+    label: "Lien vers une conversation d'assistant IA",
+    detail: "Lien de partage ou de conversation d'un assistant IA présent dans le document.",
+    strength: 'fort',
+    points: 35,
+  },
+  {
+    id: 'art-self-vendor',
+    re: /(?:je suis|i am|i['’]m)\s+(?:chat\s?gpt|claude|gemini|copilot|le chat|deepseek|grok|meta ai|qwen)\b|(?:développée?|créée?|conçue?|entraînée?) par (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b|(?:developed|created|trained|built) by (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b/gi,
+    label: "L'IA se nomme dans le texte",
+    detail:
+      "L'assistant se présente (« Je suis Claude… », « développé par Google… ») : il se désigne lui-même.",
+    strength: 'fort',
+    points: 40,
+  },
+  {
     id: 'art-self-ai',
     re: /\b(?:as an ai(?: language model)?|as a large language model|i(?: am|'m) an ai\b|my (?:training data|knowledge cut-?off)|i (?:don't|do not) have (?:access to )?(?:real-time|the internet|browsing))|en tant qu['’](?:ia|intelligence artificielle|assistant(?:e)? (?:virtuel|ia))|en tant que modèle de langage|je suis (?:une? )?(?:ia|intelligence artificielle|modèle de langage|assistant virtuel)\b|mes données d['’]entraînement|(?:ma )?date (?:limite|de coupure) (?:de mes |des )?connaissances|je n['’]ai pas accès à (?:internet|des informations en temps réel)/gi,
     label: "L'IA parle d'elle-même dans le texte",
@@ -107,11 +175,10 @@ const RULES: ArtefactRule[] = [
     re: /n['’]hésite[sz]? pas à (?:me )?(?:demander|dire|faire savoir|revenir vers moi)|j['’]espère que (?:cela|ça|ceci) (?:vous|t['’]) ?(?:aide|aidera|sera utile|conviendra)|(?:souhaite[sz]?|voulez|veux)[- ](?:vous|tu) que je|tu veux que je|dis-moi si tu (?:veux|souhaites|préfères)|dites-moi si vous (?:voulez|souhaitez|préférez)|je peux aussi (?:te|vous) (?:proposer|préparer|faire|rédiger)|si tu (?:le )?veux,? je peux|si vous le souhaitez,? je peux|let me know if (?:you|there)|i hope this helps|feel free to (?:ask|reach out|let me know)|would you like me to|do you want me to|if you(?:'d)? like,? i can|happy to help/gi,
     label: 'Phrase de conclusion / proposition de chatbot',
     detail:
-      "Le texte se termine comme une réponse d'assistant (« Souhaitez-vous que je… », « N'hésitez pas à me demander… »). L'offre finale « Veux-tu que je te prépare… ? » est très typique de ChatGPT.",
+      "Le texte se termine comme une réponse d'assistant (« Souhaitez-vous que je… », « N'hésitez pas à me demander… »). Commun à tous les assistants (ChatGPT, Gemini, Claude, Le Chat…).",
     strength: 'moyen',
     points: 22,
     zone: 'tail',
-    vendors: [{ vendor: 'chatgpt', weight: 1 }],
   },
   {
     id: 'art-placeholders',
@@ -136,11 +203,10 @@ const RULES: ArtefactRule[] = [
     re: /^[ \t]*(?:✅|❌|🚀|👉|📌|🔹|🔸|✨|💡|⚡|📊|🎯|🔥|🧠|📈|🛠\uFE0F|⚠\uFE0F|📝|🔍|💼|🌟|➡\uFE0F|✔\uFE0F|1\uFE0F⃣|2\uFE0F⃣|3\uFE0F⃣)/gmu,
     label: 'Émojis utilisés comme puces',
     detail:
-      'Lignes commençant par ✅ 🚀 👉 📌… : mise en forme très fréquente chez ChatGPT. Indice faible (les humains le font aussi sur LinkedIn).',
+      'Lignes commençant par ✅ 🚀 👉 📌… : mise en forme fréquente chez les assistants. Indice faible (les humains le font aussi sur LinkedIn).',
     strength: 'faible',
     points: 8,
     min: 3,
-    vendors: [{ vendor: 'chatgpt', weight: 1 }],
   },
   {
     id: 'art-latex',
@@ -152,9 +218,23 @@ const RULES: ArtefactRule[] = [
     points: 8,
     min: 2,
     skipKinds: ['code', 'md'],
-    vendors: [{ vendor: 'chatgpt', weight: 1 }],
   },
 ];
+
+const PUBLISHERS: [RegExp, Vendor][] = [
+  [/openai|chat\.openai/i, 'chatgpt'],
+  [/anthropic/i, 'claude'],
+  [/google|g\.co\/gemini/i, 'gemini'],
+  [/microsoft/i, 'copilot'],
+  [/mistral/i, 'mistral'],
+  [/x\.com\/i\/grok|\bxai\b/i, 'grok'],
+  [/meta\.ai|\bmeta\b/i, 'meta'],
+  [/alibaba|qwen/i, 'qwen'],
+];
+
+function vendorOfText(s: string): Vendor | null {
+  return vendorOf(s) ?? PUBLISHERS.find(([re]) => re.test(s))?.[1] ?? null;
+}
 
 const MARKDOWN_RE =
   /\*\*[^*\n]{2,80}\*\*|^#{1,4} \S.*$|^\s*(?:---|\*\*\*)\s*$|^```|^\|(?:\s*:?-{3,}:?\s*\|)+\s*$/gm;
@@ -181,9 +261,9 @@ export class ArtefactDetector implements SignalDetector {
       for (const h of r.highlights) highlights.push({ ...h, start: h.start + offset, end: h.end + offset });
 
       let vendors = rule.vendors;
-      if (rule.id === 'art-utm') {
-        const v = [...r.distinct].map(vendorOf).find(Boolean);
-        vendors = v ? [{ vendor: v, weight: 3 }] : undefined;
+      if (rule.id === 'art-utm' || rule.id === 'art-share-link' || rule.id === 'art-self-vendor') {
+        const found = new Set([...r.distinct].map(vendorOfText).filter((v): v is Vendor => v !== null));
+        vendors = found.size ? [...found].map((vendor) => ({ vendor, weight: 3 })) : undefined;
       }
       signals.push({
         id: rule.id,

@@ -69,10 +69,6 @@ export class CodeDetector implements SignalDetector {
         "Claude et ChatGPT ponctuent volontiers les print/console.log d'émojis. Beaucoup de développeurs aussi.",
       strength: 'faible',
       points: 8,
-      vendors: [
-        { vendor: 'claude', weight: 1 },
-        { vendor: 'chatgpt', weight: 1 },
-      ],
     });
 
     const lines = text.split('\n').filter((l) => l.trim());

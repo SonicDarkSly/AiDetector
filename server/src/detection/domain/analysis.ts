@@ -46,7 +46,7 @@ export class Analysis extends AggregateRoot {
         data.score,
         data.verdict,
         data.undetermined,
-        data.vendors[0]?.label ?? null,
+        data.vendors.find((v) => v.level === 'trace')?.label ?? null,
       ),
     );
     return analysis;
@@ -80,7 +80,7 @@ export class Analysis extends AggregateRoot {
       score: s.score,
       verdict: s.verdict,
       undetermined: s.undetermined === true,
-      topVendor: s.vendors[0]?.label ?? null,
+      topVendor: s.vendors.find((v) => v.level === 'trace')?.label ?? null,
       excerpt: s.text.slice(0, 140).replace(/\s+/g, ' ').trim(),
     };
   }

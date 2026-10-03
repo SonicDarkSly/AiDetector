@@ -8,6 +8,7 @@ export type Vendor =
   | 'deepseek'
   | 'grok'
   | 'meta'
+  | 'qwen'
   | 'script';
 
 export const VENDOR_LABELS: Record<Vendor, string> = {
@@ -20,6 +21,7 @@ export const VENDOR_LABELS: Record<Vendor, string> = {
   deepseek: 'DeepSeek',
   grok: 'Grok (xAI)',
   meta: 'Meta AI',
+  qwen: 'Qwen (Alibaba)',
   script: 'Fichier généré par un programme',
 };
 
@@ -28,10 +30,26 @@ export interface VendorHint {
   weight: number;
 }
 
+export const AI_VENDORS: Vendor[] = [
+  'chatgpt',
+  'claude',
+  'gemini',
+  'copilot',
+  'mistral',
+  'deepseek',
+  'perplexity',
+  'grok',
+  'meta',
+  'qwen',
+];
+
+export type VendorLevel = 'trace' | 'indice' | 'aucun';
+
 export interface VendorScore {
   vendor: Vendor;
   label: string;
   score: number;
+  level: VendorLevel;
   reasons: string[];
 }
 
@@ -45,6 +63,7 @@ const VENDOR_PATTERNS: [RegExp, Vendor][] = [
   [/deepseek/i, 'deepseek'],
   [/\bgrok\b|\bx\.ai\b|\bxai\b/i, 'grok'],
   [/meta\s?ai|\bllama\b/i, 'meta'],
+  [/\bqwen\b|tongyi/i, 'qwen'],
 ];
 
 export function vendorOf(s: string): Vendor | null {

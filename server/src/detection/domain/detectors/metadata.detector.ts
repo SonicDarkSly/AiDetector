@@ -21,11 +21,11 @@ const PDF_GENERATORS: GeneratorRule[] = [
   {
     re: /reportlab/i,
     label: 'PDF généré par ReportLab (script Python)',
-    points: 22,
+    points: 12,
     strength: 'moyen',
     direction: 'ia',
     detail:
-      "ReportLab est la bibliothèque Python qu'utilisent ChatGPT (analyse de données) et Claude pour fabriquer des PDF. Elle sert aussi à des logiciels métiers (factures, relevés) : indice sérieux pour un document « rédigé », pas une preuve seule.",
+      "ReportLab est une bibliothèque Python : le PDF a été fabriqué par un programme. C'est l'outil qu'utilisent ChatGPT et Claude quand ils créent un PDF, mais aussi beaucoup de logiciels (factures, relevés, attestations). Indice seulement pour un document « rédigé » (lettre, rapport).",
     vendors: [
       { vendor: 'script', weight: 3 },
       { vendor: 'chatgpt', weight: 1 },
@@ -43,16 +43,17 @@ const PDF_GENERATORS: GeneratorRule[] = [
     vendors: [
       { vendor: 'script', weight: 3 },
       { vendor: 'chatgpt', weight: 1 },
+      { vendor: 'claude', weight: 1 },
     ],
   },
   {
     re: /fpdf|weasyprint|wkhtmltopdf|xhtml2pdf|\bpisa\b|pdfkit|jspdf|pdf-lib|pdfmake|puppeteer|playwright|headlesschrome|prince(xml)?\b|docraptor|pandoc|typst/i,
-    label: 'PDF généré par une bibliothèque de programmation',
-    points: 12,
-    strength: 'moyen',
+    label: 'PDF fabriqué par un programme',
+    points: 5,
+    strength: 'faible',
     direction: 'ia',
     detail:
-      "Fichier fabriqué par un programme (HTML→PDF, script…), pas exporté depuis un traitement de texte. C'est la façon dont les assistants IA « codeurs » produisent des PDF, mais aussi celle de nombreux sites web.",
+      "Outil de conversion HTML→PDF ou de génération automatique (WeasyPrint, wkhtmltopdf, Chrome sans interface…). Ce n'est pas un outil d'IA : la plupart de ces PDF viennent de sites web et de logiciels (factures, billets, rapports). Indice très faible, seulement parce qu'un assistant IA qui « code » un PDF passe aussi par ce genre d'outil.",
     vendors: [{ vendor: 'script', weight: 2 }],
   },
   {

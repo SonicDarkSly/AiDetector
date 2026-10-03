@@ -134,7 +134,6 @@ export class UnicodeDetector implements SignalDetector {
         strength: 'moyen',
         direction: 'ia',
         points: 12,
-        vendors: [{ vendor: 'chatgpt', weight: 1 }],
         evidence: suspicious.slice(0, 4).map((h) => excerpt(text, h.start, h.end, 25)),
         count: suspicious.length,
       });

@@ -1,5 +1,5 @@
 import { TECHNICAL_CATEGORIES, type Signal } from '../signal/signal.js';
-import { VENDOR_LABELS, type Vendor, type VendorScore } from '../signal/vendor.js';
+import { AI_VENDORS, VENDOR_LABELS, type Vendor, type VendorScore } from '../signal/vendor.js';
 import type { TextStats } from '../text/text-stats.js';
 
 export type Confidence = 'faible' | 'moyenne' | 'élevée';
@@ -134,22 +134,29 @@ function summarize(
 }
 
 function attribute(signals: Signal[]): VendorScore[] {
-  const acc = new Map<Vendor, { sum: number; reasons: string[] }>();
+  const acc = new Map<Vendor, { sum: number; trace: boolean; reasons: string[] }>();
   for (const s of signals) {
     if (s.direction !== 'ia' || !s.vendors) continue;
     for (const h of s.vendors) {
-      const e = acc.get(h.vendor) ?? { sum: 0, reasons: [] };
+      const e = acc.get(h.vendor) ?? { sum: 0, trace: false, reasons: [] };
       e.sum += h.weight * STRENGTH_FACTOR[s.strength];
+      // une « trace » = un marqueur propre à cette IA, pas un outil qu'elle partage avec d'autres
+      if (h.weight >= 2 && (s.strength === 'fort' || s.strength === 'moyen')) e.trace = true;
       if (!e.reasons.includes(s.label)) e.reasons.push(s.label);
       acc.set(h.vendor, e);
     }
   }
-  return [...acc]
-    .map(([vendor, e]) => ({
-      vendor,
-      label: VENDOR_LABELS[vendor],
-      score: Math.min(100, Math.round(e.sum * 8)),
-      reasons: e.reasons,
-    }))
+  const vendors: Vendor[] = [...AI_VENDORS, ...(acc.has('script') ? (['script'] as Vendor[]) : [])];
+  return vendors
+    .map((vendor) => {
+      const e = acc.get(vendor);
+      return {
+        vendor,
+        label: VENDOR_LABELS[vendor],
+        score: e ? Math.min(100, Math.round(e.sum * 8)) : 0,
+        level: e ? (e.trace ? 'trace' : 'indice') : 'aucun',
+        reasons: e?.reasons ?? [],
+      } satisfies VendorScore;
+    })
     .sort((a, b) => b.score - a.score);
 }

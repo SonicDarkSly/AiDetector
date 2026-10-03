@@ -179,7 +179,6 @@ export class StyleDetector implements SignalDetector {
         strength: 'faible',
         direction: 'ia',
         points: 8,
-        vendors: [{ vendor: 'chatgpt', weight: 1 }],
         evidence: nxby.evidence,
         count: nxby.count,
       });
@@ -230,11 +229,10 @@ export class StyleDetector implements SignalDetector {
         id: 'sty-emdash',
         category: 'style',
         label: `Tirets cadratins fréquents (${emCount})`,
-        detail: `${stats.emDashPer1000} pour 1000 mots. Ce tiret n'existe pas sur un clavier AZERTY/QWERTZ (il faut un raccourci) ; ChatGPT en abuse. Les correcteurs (Word, macOS) en insèrent parfois.`,
+        detail: `${stats.emDashPer1000} pour 1000 mots. Ce tiret n'existe pas sur un clavier AZERTY/QWERTZ (il faut un raccourci) ; les assistants en abusent (ChatGPT en tête). Les correcteurs (Word, macOS) en insèrent parfois.`,
         strength: 'faible',
         direction: 'ia',
         points: 10,
-        vendors: [{ vendor: 'chatgpt', weight: 1 }],
         count: emCount,
       });
     }

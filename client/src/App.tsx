@@ -160,15 +160,18 @@ export default function App() {
               <Col xs={24} lg={10}>
                 <Flex vertical gap={16}>
                   <VerdictCard report={report} />
-                  <VendorCard vendors={report.vendors} />
+                  <VendorCard
+                    vendors={report.vendors}
+                    aiLikely={!report.undetermined && report.score >= 50}
+                  />
                   <MetadataTable metadata={report.metadata} kind={report.source.kind} />
                   {report.source.kind !== 'code' && <StatsCard stats={report.stats} />}
                 </Flex>
               </Col>
               <Col xs={24} lg={14}>
                 <Flex vertical gap={16}>
-                  <SignalList key={report.id} signals={report.signals} />
-                  <AnnotatedText key={report.id} report={report} />
+                  <SignalList key={`signals-${report.id}`} signals={report.signals} />
+                  <AnnotatedText key={`text-${report.id}`} report={report} />
                 </Flex>
               </Col>
             </Row>
