@@ -25,7 +25,7 @@ export function StatsCard({ stats }: { stats: TextStats }) {
       hint: 'MATTR (fenêtre de 50 mots) : part de mots différents. Information seulement, peu discriminante.',
     },
     {
-      title: 'Tirets cadratins / 1000 mots',
+      title: 'Tirets longs (pour 1000 mots)',
       value: stats.emDashPer1000,
       hint: 'Tiret cadratin, absent des claviers : très utilisé par ChatGPT.',
       warn: stats.emDashPer1000 >= 4 && stats.words >= 250,
@@ -41,7 +41,7 @@ export function StatsCard({ stats }: { stats: TextStats }) {
     <Card size="small" title="Statistiques du texte">
       <Row gutter={[12, 12]}>
         {items.map((it) => (
-          <Col key={it.title} xs={12} sm={6} lg={12} xl={6}>
+          <Col key={it.title} xs={12} sm={6} lg={3}>
             <Tooltip title={it.hint}>
               <div style={{ cursor: 'help' }}>
                 <Statistic

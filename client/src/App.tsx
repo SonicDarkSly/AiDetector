@@ -161,15 +161,21 @@ export default function App() {
                 <Flex vertical gap={16}>
                   <VerdictCard report={report} />
                   <OriginCard report={report} />
-                  <MetadataTable metadata={report.metadata} kind={report.source.kind} />
-                  {report.source.kind !== 'code' && <StatsCard stats={report.stats} />}
                 </Flex>
               </Col>
               <Col xs={24} lg={14}>
                 <Flex vertical gap={16}>
                   <SignalList key={`signals-${report.id}`} signals={report.signals} />
-                  <AnnotatedText key={`text-${report.id}`} report={report} />
+                  <MetadataTable metadata={report.metadata} kind={report.source.kind} />
                 </Flex>
+              </Col>
+              {report.source.kind !== 'code' && (
+                <Col span={24}>
+                  <StatsCard stats={report.stats} />
+                </Col>
+              )}
+              <Col span={24}>
+                <AnnotatedText key={`text-${report.id}`} report={report} />
               </Col>
             </Row>
           </div>
