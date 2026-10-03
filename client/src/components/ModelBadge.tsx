@@ -8,11 +8,15 @@ import type { LanguageModelInfo } from '../types';
 const { Text } = Typography;
 
 const STATUS: Record<LanguageModelInfo['status'], { label: string; color: string; hint: string }> = {
-  ready: { label: 'en mémoire', color: 'green', hint: 'Chargé, la prochaine analyse est immédiate.' },
+  ready: {
+    label: 'en mémoire',
+    color: 'green',
+    hint: 'Chargé : la prochaine analyse est immédiate. Libéré automatiquement après 5 min sans analyse.',
+  },
   idle: {
     label: 'prêt',
     color: 'blue',
-    hint: 'Téléchargé, chargé au premier usage puis libéré après 10 min sans analyse.',
+    hint: 'Téléchargé, chargé au premier usage puis libéré après 5 min sans analyse.',
   },
   missing: {
     label: 'non téléchargé',
