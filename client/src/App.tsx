@@ -102,7 +102,7 @@ export default function App() {
               </Title>
               <Text type="secondary" style={{ display: 'block' }}>
                 Ce texte ou ce fichier vient-il d'une IA ? Métadonnées, traces de copier-coller, caractères
-                cachés et style. 100 % local, sans IA.
+                cachés, modèle de langage local et style. 100 % local, rien ne sort de cette machine.
               </Text>
             </div>
           </Flex>
