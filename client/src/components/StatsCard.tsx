@@ -8,7 +8,7 @@ interface Item {
   warn?: boolean;
 }
 
-export function StatsCard({ stats }: { stats: TextStats }) {
+export function StatsCard({ stats, compact = false }: { stats: TextStats; compact?: boolean }) {
   const items: Item[] = [
     { title: 'Mots', value: stats.words, hint: 'Nombre de mots analysés.' },
     { title: 'Phrases', value: stats.sentences, hint: 'Phrases de 3 mots ou plus (titres courts ignorés).' },
@@ -41,11 +41,27 @@ export function StatsCard({ stats }: { stats: TextStats }) {
     <Card size="small" title="Statistiques du texte">
       <Row gutter={[12, 12]}>
         {items.map((it) => (
-          <Col key={it.title} xs={12} sm={6} lg={3}>
+          <Col key={it.title} xs={12} sm={6} lg={compact ? 6 : 3}>
             <Tooltip title={it.hint}>
               <div style={{ cursor: 'help' }}>
                 <Statistic
-                  title={<span style={{ fontSize: 11 }}>{it.title}</span>}
+                  title={
+                    <span
+                      style={
+                        compact
+                          ? {
+                              fontSize: 11,
+                              display: 'block',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }
+                          : { fontSize: 11 }
+                      }
+                    >
+                      {it.title}
+                    </span>
+                  }
                   value={it.value}
                   valueStyle={{ fontSize: 18, color: it.warn ? '#fa8c16' : undefined }}
                 />

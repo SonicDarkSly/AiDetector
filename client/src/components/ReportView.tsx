@@ -39,6 +39,7 @@ export function ReportView({ report }: { report: AnalysisReport }) {
   );
   const metadata = <MetadataTable metadata={report.metadata} kind={report.source.kind} />;
   const stats = report.source.kind !== 'code' ? <StatsCard stats={report.stats} /> : null;
+  const statsCompact = report.source.kind !== 'code' ? <StatsCard stats={report.stats} compact /> : null;
   const text = <AnnotatedText key={`text-${report.id}`} report={report} />;
 
   return (
@@ -69,9 +70,9 @@ export function ReportView({ report }: { report: AnalysisReport }) {
             <Flex vertical gap={16}>
               {signals}
               {metadata}
+              {statsCompact}
             </Flex>
           </Col>
-          {stats && <Col span={24}>{stats}</Col>}
           <Col span={24}>{text}</Col>
         </Row>
       )}

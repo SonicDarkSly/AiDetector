@@ -130,3 +130,9 @@ body {
   border-left-color: rgba(255, 255, 255, 0.18);
   color: rgba(255, 255, 255, 0.78);
 }
+
+.origin-subtitle.spaced {
+  margin-top: 6px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(127, 127, 127, 0.2);
+}

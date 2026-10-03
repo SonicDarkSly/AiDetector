@@ -36,7 +36,14 @@ export function evaluateOrigins(
     }
   }
 
-  const weights = AI_VENDORS.map((v) => Math.exp(evidence.get(v)?.sum ?? 0));
+  // Plusieurs assistants tracés (texte qui cite des marqueurs de plusieurs IA) : partage au prorata
+  // des preuves, sans écraser les autres à 0 comme le ferait une exponentielle.
+  const traced = AI_VENDORS.some((v) => evidence.get(v)?.trace);
+  const weights = AI_VENDORS.map((v) => {
+    const e = evidence.get(v);
+    if (traced) return e?.trace ? e.sum : 0;
+    return 1 + (e?.sum ?? 0);
+  });
   const total = weights.reduce((a, w) => a + w, 0);
 
   const ai: OriginScore[] = AI_VENDORS.map((vendor, i) => {

@@ -33,9 +33,18 @@ function Row({ o }: { o: OriginScore }) {
             {o.label}
           </Text>
           {o.kind === 'ia' && o.level === 'trace' && (
-            <Tag color="red" style={{ marginInlineEnd: 0, fontSize: 10, lineHeight: '16px' }}>
-              trace
-            </Tag>
+            <Tooltip
+              title={
+                o.reasons.length ? `Détail dans « Indices détectés » : ${o.reasons.join(' · ')}` : undefined
+              }
+            >
+              <Tag
+                color="red"
+                style={{ marginInlineEnd: 0, fontSize: 10, lineHeight: '16px', cursor: 'help' }}
+              >
+                trace
+              </Tag>
+            </Tooltip>
           )}
         </Flex>
         <Text strong style={{ fontSize: 13, color: o.score ? color : undefined }}>
@@ -49,11 +58,34 @@ function Row({ o }: { o: OriginScore }) {
         size="small"
         style={{ margin: 0 }}
       />
-      {o.reasons.length > 0 && (
+      {o.kind === 'logiciel' && o.reasons.length > 0 && (
         <Text type="secondary" style={{ fontSize: 11 }}>
           {o.reasons.join(' · ')}
         </Text>
       )}
+    </div>
+  );
+}
+
+function SubTitle({
+  icon,
+  title,
+  children,
+  spaced = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  children: React.ReactNode;
+  spaced?: boolean;
+}) {
+  return (
+    <div className={spaced ? 'origin-subtitle spaced' : 'origin-subtitle'}>
+      <Text strong style={{ fontSize: 12 }}>
+        {icon} {title}
+      </Text>
+      <Text type="secondary" style={{ fontSize: 11, display: 'block' }}>
+        {children}
+      </Text>
     </div>
   );
 }
@@ -139,13 +171,27 @@ export function OriginCard({ report, compact = false }: { report: AnalysisReport
       }
     >
       <Flex vertical gap={10}>
-        <Text type="secondary" style={{ fontSize: 11 }}>
-          Logiciels : certitude d'après les métadonnées du fichier. Assistants IA : part de la probabilité IA
-          globale. {note}
-        </Text>
-        {shownTools.map((o) => (
-          <Row key={o.id} o={o} />
-        ))}
+        {(report.source.kind !== 'text' || shownTools.length > 0) && (
+          <>
+            <SubTitle icon={<ToolOutlined />} title="Logiciels">
+              Certitude d'après les métadonnées du fichier.
+            </SubTitle>
+            {shownTools.length > 0 ? (
+              shownTools.map((o) => <Row key={o.id} o={o} />)
+            ) : (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                Aucun logiciel identifié dans les métadonnées.
+              </Text>
+            )}
+          </>
+        )}
+        <SubTitle
+          icon={<RobotOutlined />}
+          title="Assistants IA"
+          spaced={report.source.kind !== 'text' || shownTools.length > 0}
+        >
+          Part de la probabilité IA globale. {note}
+        </SubTitle>
         {shownIdentified.map((o) => (
           <Row key={o.id} o={o} />
         ))}

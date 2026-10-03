@@ -20,7 +20,7 @@ const KNOWN: [RegExp, string, string?][] = [
   [/pdfmake/i, 'pdfmake'],
   [/puppeteer/i, 'Puppeteer'],
   [/playwright/i, 'Playwright'],
-  [/headlesschrome/i, 'Chrome sans interface'],
+  [/headlesschrome/i, 'Chrome / Edge (impression PDF)'],
   [/prince/i, 'Prince'],
   [/pandoc/i, 'Pandoc'],
   [/typst/i, 'Typst'],
