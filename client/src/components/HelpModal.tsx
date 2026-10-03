@@ -53,7 +53,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         plus attendus ; un humain s'en écarte davantage. Le modèle ne génère rien, il mesure. Le score combine
         la probabilité moyenne des mots et la longueur du texte, calibré sur{' '}
         <Text strong>394 textes en français</Text> (46 générés par IA, 348 écrits par des humains avant 2022).
-        Son nom, le nombre de tokens lus et la durée sont indiqués sous le verdict.
+        Son nom et ses caractéristiques sont indiqués sous la zone de saisie ; le verdict rappelle sa
+        fiabilité pour la longueur du texte analysé.
       </Paragraph>
       <Table
         size="small"
@@ -81,8 +82,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
       <Paragraph>
         <ul>
           <li>
-            <Text strong>Verdict</Text> : score global et trois barres (preuves techniques, modèle de langage,
-            style). Quand rien d'exploitable n'est trouvé, la jauge affiche « ? » : le texte est
+            <Text strong>Verdict</Text> : score global et trois barres (preuves techniques, prévisibilité du
+            texte, style). Quand rien d'exploitable n'est trouvé, la jauge affiche « ? » : le texte est
             indéterminable, ce qui ne veut pas dire humain.
           </li>
           <li>

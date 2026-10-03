@@ -1,7 +1,7 @@
 import { Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { AnalysisReport } from '../types';
-import { KIND_LABELS, LANGUAGE_LABELS, scoreColor } from '../constants';
+import { KIND_LABELS, LANGUAGE_LABELS, MEASURED_RATES, scoreColor } from '../constants';
 import { formatDate, formatSize } from '../utils/format';
 
 const { Title, Text, Paragraph } = Typography;
@@ -66,15 +66,16 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
               </div>
             </Tooltip>
             {report.modelScore != null && (
-              <Tooltip title="Probabilité estimée par le modèle de langage local à partir de la prévisibilité du texte. Peu fiable sous ~150 mots.">
+              <Tooltip title="Mesurée par un modèle de langage local : plus les mots choisis sont attendus, plus le texte ressemble à une production d'IA.">
                 <div>
-                  <Text style={{ fontSize: 12 }}>Modèle de langage</Text>
+                  <Text style={{ fontSize: 12 }}>Prévisibilité du texte</Text>
                   <Progress
                     percent={report.modelScore}
                     strokeColor={scoreColor(report.modelScore)}
                     size="small"
                     format={(p) => `${p}%`}
                   />
+                  <Reliability tokens={report.languageModel?.tokens} />
                 </div>
               </Tooltip>
             )}
@@ -97,5 +98,16 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
         {LANGUAGE_LABELS[stats.language]}
       </Text>
     </Card>
+  );
+}
+
+function Reliability({ tokens }: { tokens?: number }) {
+  if (!tokens) return null;
+  const rate = [...MEASURED_RATES].reverse().find((r) => tokens >= r.tokens) ?? MEASURED_RATES[0];
+  return (
+    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
+      Sur {tokens} tokens : {rate.detected} % des textes IA repérés, {rate.falsePositives} % de textes humains
+      signalés à tort
+    </Text>
   );
 }
