@@ -52,8 +52,15 @@ function DirectionIcon({ s }: { s: Signal }) {
 
 function SignalItem({ s }: { s: Signal }) {
   const { token } = theme.useToken();
+  const dark = useDark();
   return (
-    <div style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
+    <div
+      className="signal-item"
+      style={{
+        padding: '8px 0',
+        borderBottom: `1px solid ${dark ? 'rgba(255,255,255,0.06)' : token.colorSplit}`,
+      }}
+    >
       <Flex gap={8} align="flex-start">
         <span style={{ marginTop: 3 }}>
           <DirectionIcon s={s} />
@@ -61,7 +68,10 @@ function SignalItem({ s }: { s: Signal }) {
         <div style={{ flex: 1, minWidth: 0 }}>
           <Flex gap={6} align="center" wrap>
             <Text strong>{s.label}</Text>
-            <Tag color={STRENGTH_COLORS[s.strength]} style={{ marginInlineEnd: 0 }}>
+            <Tag
+              color={s.direction === 'humain' ? 'green' : STRENGTH_COLORS[s.strength]}
+              style={{ marginInlineEnd: 0 }}
+            >
               {STRENGTH_LABELS[s.strength]}
             </Tag>
             {s.points !== 0 && (
@@ -76,21 +86,27 @@ function SignalItem({ s }: { s: Signal }) {
             {s.detail}
           </Paragraph>
           {s.evidence && s.evidence.length > 0 && (
-            <Flex vertical gap={3}>
-              {s.evidence.map((e, i) => (
-                <Text
-                  key={i}
-                  code
-                  style={{
-                    fontSize: 11.5,
-                    whiteSpace: 'pre-wrap',
-                    wordBreak: 'break-word',
-                    display: 'block',
-                  }}
-                >
-                  {e}
-                </Text>
-              ))}
+            <Flex vertical gap={dark ? 4 : 3} align={dark ? 'flex-start' : undefined}>
+              {s.evidence.map((e, i) =>
+                dark ? (
+                  <span key={i} className="evidence-chip">
+                    {e}
+                  </span>
+                ) : (
+                  <Text
+                    key={i}
+                    code
+                    style={{
+                      fontSize: 11.5,
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      display: 'block',
+                    }}
+                  >
+                    {e}
+                  </Text>
+                ),
+              )}
             </Flex>
           )}
         </div>
@@ -99,7 +115,10 @@ function SignalItem({ s }: { s: Signal }) {
   );
 }
 
-const ACCENTS = { technical: '#ff4d4f', indicators: '#9254de' } as const;
+const ACCENTS = {
+  technical: { rgb: '255, 77, 79', text: '#ff8f91' },
+  indicators: { rgb: '146, 84, 222', text: '#c5a3f7' },
+} as const;
 type SectionKind = keyof typeof ACCENTS;
 
 function useDark(): boolean {
@@ -110,7 +129,7 @@ function useDark(): boolean {
 function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[] }) {
   const { token } = theme.useToken();
   const dark = useDark();
-  const separator = dark ? 'rgba(255,255,255,0.09)' : token.colorBorderSecondary;
+  const separator = dark ? 'rgba(255,255,255,0.08)' : token.colorBorderSecondary;
   const groups = order
     .map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) }))
     .filter((g) => g.items.length > 0);
@@ -118,6 +137,7 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
     <Collapse
       bordered={false}
       ghost
+      className={dark ? 'signal-groups dark' : 'signal-groups'}
       defaultActiveKey={groups.map((g) => g.cat)}
       items={groups.map(({ cat, items }, i) => {
         const ia = items.filter((s) => s.direction === 'ia').length;
@@ -146,8 +166,47 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
   );
 }
 
-export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
+function SectionHeader({ kind, children }: { kind: SectionKind; children: ReactNode }) {
   const { token } = theme.useToken();
+  const dark = useDark();
+  const danger = kind === 'technical';
+  const style: CSSProperties = dark
+    ? {
+        background: `linear-gradient(90deg, rgba(${ACCENTS[kind].rgb}, 0.22), rgba(${ACCENTS[kind].rgb}, 0.06))`,
+        color: ACCENTS[kind].text,
+        borderBottom: `1px solid rgba(${ACCENTS[kind].rgb}, 0.3)`,
+      }
+    : {
+        background: danger ? token.colorErrorBg : token.colorFillSecondary,
+        color: danger ? token.colorErrorText : token.colorTextSecondary,
+        borderTop: danger ? 'none' : `1px solid ${token.colorBorder}`,
+        borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
+      };
+  return (
+    <div className="signal-section" style={style}>
+      {children}
+    </div>
+  );
+}
+
+function Section({ kind, children }: { kind: SectionKind; children: ReactNode }) {
+  const dark = useDark();
+  if (!dark) return <>{children}</>;
+  return (
+    <div
+      className="signal-panel"
+      style={{
+        border: `1px solid rgba(${ACCENTS[kind].rgb}, 0.32)`,
+        background: `rgba(${ACCENTS[kind].rgb}, 0.03)`,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
+  const dark = useDark();
   const main = all.filter(
     (s) => s.direction !== 'neutre' && (s.strength === 'fort' || s.strength === 'moyen'),
   );
@@ -162,35 +221,19 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
     );
   }
   const proofs = technical.filter((s) => s.direction === 'ia' && s.points > 0).length;
-  const dark = useDark();
-  const section = (kind: SectionKind, first: boolean): CSSProperties => {
-    const danger = kind === 'technical';
-    if (dark) {
-      const rgb = danger ? '255, 77, 79' : '146, 84, 222';
-      return {
-        background: `linear-gradient(90deg, rgba(${rgb}, 0.26), rgba(${rgb}, 0.04) 70%)`,
-        color: danger ? '#ff8a8c' : '#c4a1f5',
-        borderLeft: `3px solid ${ACCENTS[kind]}`,
-        borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.08)',
-        borderBottom: `1px solid rgba(${rgb}, 0.35)`,
-      };
-    }
-    return {
-      background: danger ? token.colorErrorBg : token.colorFillSecondary,
-      color: danger ? token.colorErrorText : token.colorTextSecondary,
-      borderTop: first ? 'none' : `1px solid ${token.colorBorder}`,
-      borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
-    };
-  };
-  const block = (kind: SectionKind): CSSProperties | undefined =>
-    dark ? { borderLeft: `3px solid ${ACCENTS[kind]}55` } : undefined;
   return (
-    <Card size="small" title="Indices détectés" styles={{ body: { padding: 0 } }}>
-      <div className="signal-section" style={section('technical', true)}>
-        <span>Preuves techniques</span>
-        {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
-      </div>
-      <div style={block('technical')}>
+    <Card
+      size="small"
+      title="Indices détectés"
+      styles={{
+        body: dark ? { padding: 12, display: 'flex', flexDirection: 'column', gap: 12 } : { padding: 0 },
+      }}
+    >
+      <Section kind="technical">
+        <SectionHeader kind="technical">
+          <span>Preuves techniques</span>
+          {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
+        </SectionHeader>
         {technical.length > 0 ? (
           <Groups signals={technical} order={TECHNICAL} />
         ) : (
@@ -198,17 +241,14 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
             Aucune trace technique : ni métadonnée d'IA, ni artefact de chatbot, ni caractère caché.
           </Text>
         )}
-      </div>
+      </Section>
       {indicators.length > 0 && (
-        <>
-          {dark && <div className="signal-gap" />}
-          <div className="signal-section" style={section('indicators', dark)}>
+        <Section kind="indicators">
+          <SectionHeader kind="indicators">
             <span>Indices statistiques et de style</span>
-          </div>
-          <div style={block('indicators')}>
-            <Groups signals={indicators} order={INDICATORS} />
-          </div>
-        </>
+          </SectionHeader>
+          <Groups signals={indicators} order={INDICATORS} />
+        </Section>
       )}
     </Card>
   );
