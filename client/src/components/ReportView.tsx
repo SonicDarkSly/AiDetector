@@ -208,7 +208,9 @@ export function ReportView({ report }: { report: AnalysisReport }) {
       case 'signals':
         return <SignalList key={`signals-${report.id}`} signals={report.signals} mainOnly={summary} />;
       case 'metadata':
-        return <MetadataTable metadata={report.metadata} kind={report.source.kind} />;
+        return report.source.kind !== 'text' ? (
+          <MetadataTable metadata={report.metadata} kind={report.source.kind} />
+        ) : null;
       case 'stats':
         return report.source.kind !== 'code' ? <StatsCard stats={report.stats} compact={narrow} /> : null;
       case 'text':
