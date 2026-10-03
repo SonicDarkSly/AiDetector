@@ -20,14 +20,17 @@ const INVISIBLE: Record<string, string> = {
 const INVISIBLE_RE =
   /[\u200B\u200C\u200D\u2060\uFEFF\u202F\u00AD\u180E\u202A-\u202E\u2066-\u2069\uE000-\uF8FF\uFE00-\uFE0F]|[\u{E0000}-\u{E007F}]+/gu;
 
+function isTagRun(c: string): boolean {
+  const cp = c.codePointAt(0) ?? 0;
+  return cp >= 0xe0000 && cp <= 0xe007f;
+}
+
 function invisibleName(c: string): string {
   if (INVISIBLE[c]) return INVISIBLE[c];
-  const cp = c.codePointAt(0) ?? 0;
-  if (cp >= 0xe0000 && cp <= 0xe007f) {
-    const hidden = [...c].map((x) => String.fromCharCode((x.codePointAt(0) ?? 0xe0000) - 0xe0000)).join('');
-    return `TAG « ${hidden} »`;
+  if (isTagRun(c)) {
+    return [...c].map((x) => String.fromCharCode((x.codePointAt(0) ?? 0xe0000) - 0xe0000)).join('');
   }
-  return `U+${cp.toString(16).toUpperCase()}`;
+  return `U+${(c.codePointAt(0) ?? 0).toString(16).toUpperCase()}`;
 }
 
 function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactNode[] {
@@ -39,7 +42,11 @@ function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactN
     const idx = m.index ?? 0;
     if (idx > last) out.push(s.slice(last, idx));
     out.push(
-      <span key={`${keyBase}-i${i++}`} className="invisible-char">
+      <span
+        key={`${keyBase}-i${i++}`}
+        className={isTagRun(m[0]) ? 'hidden-message' : 'invisible-char'}
+        title={isTagRun(m[0]) ? 'Message caché en caractères « tags »' : 'Caractère invisible'}
+      >
         {invisibleName(m[0])}
       </span>,
     );
@@ -133,7 +140,7 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
         </>
       ) : (
         <>
-          <Flex gap={6} wrap style={{ marginBottom: 10 }}>
+          <Flex gap={6} wrap align="center" style={{ marginBottom: 10 }}>
             <Text type="secondary" style={{ fontSize: 12 }}>
               Légende :
             </Text>
@@ -146,6 +153,12 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
             <Tag className="hl hl-faible" bordered={false}>
               faible
             </Tag>
+            {showInvisible && <span className="invisible-char">ZWSP</span>}
+            {showInvisible && (
+              <Text type="secondary" style={{ fontSize: 12 }}>
+                caractère invisible
+              </Text>
+            )}
             <Text type="secondary" style={{ fontSize: 12 }}>
               (survolez un passage pour voir le signal)
             </Text>

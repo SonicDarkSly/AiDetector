@@ -10,12 +10,15 @@ export function visible(s: string): string {
     .replace(/\u202F/g, '⟦NNBSP⟧')
     .replace(/\u00AD/g, '⟦SHY⟧')
     .replace(/[\uE000-\uF8FF]/g, (c) => `⟦U+${c.charCodeAt(0).toString(16).toUpperCase()}⟧`)
+    .replace(/[\u{E0000}-\u{E007F}]+/gu, '⟦TAG⟧')
     .replace(/\s+/g, ' ');
 }
 
 export function excerpt(text: string, start: number, end: number, radius = 40): string {
-  const a = Math.max(0, start - radius);
-  const b = Math.min(text.length, end + radius);
+  let a = Math.max(0, start - radius);
+  let b = Math.min(text.length, end + radius);
+  if (a > 0 && /[\uDC00-\uDFFF]/.test(text[a])) a--;
+  if (b < text.length && /[\uD800-\uDBFF]/.test(text[b - 1])) b++;
   return `${a > 0 ? '…' : ''}${visible(text.slice(a, b)).trim()}${b < text.length ? '…' : ''}`;
 }
 
