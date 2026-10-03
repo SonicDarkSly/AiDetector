@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button, Card, Flex, Input, Tabs, Typography, Upload } from 'antd';
 import { ClearOutlined, FileSearchOutlined, InboxOutlined, ScanOutlined } from '@ant-design/icons';
 import { ACCEPT, IA_RING_GRADIENT } from '../constants';
+import { ModelBadge } from './ModelBadge';
 
 const { Text } = Typography;
-const TAB_KEY = 'aidetector-input-tab';
+const TAB_KEY = 'mefiance-input-tab';
 
 interface Props {
   loading: boolean;
@@ -123,6 +124,9 @@ export function InputPanel({ loading, dark, onText, onFile }: Props) {
             },
           ]}
         />
+        <div className="model-footer">
+          <ModelBadge refreshKey={loading} />
+        </div>
       </Card>
     </div>
   );

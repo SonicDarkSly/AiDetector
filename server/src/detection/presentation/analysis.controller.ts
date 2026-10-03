@@ -21,6 +21,8 @@ import { ClearHistoryCommand } from '../application/commands/clear-history.comma
 import { DeleteAnalysisCommand } from '../application/commands/delete-analysis.command.js';
 import { GetAnalysisQuery } from '../application/queries/get-analysis.query.js';
 import { GetHistoryQuery } from '../application/queries/get-history.query.js';
+import { GetLanguageModelQuery } from '../application/queries/get-language-model.query.js';
+import type { LanguageModelInfo } from '../domain/likelihood/likelihood-scorer.js';
 import type { AnalysisSnapshot, AnalysisSummary } from '../domain/analysis.js';
 import { UnreadableDocumentError } from '../domain/document/document-reader.js';
 
@@ -33,6 +35,11 @@ export class AnalysisController {
     private readonly commands: CommandBus,
     private readonly queries: QueryBus,
   ) {}
+
+  @Get('model')
+  model(): Promise<LanguageModelInfo> {
+    return this.queries.execute(new GetLanguageModelQuery());
+  }
 
   @Post('analyze/text')
   analyzeText(@Req() req: Request, @Body() body: { text?: unknown }): Promise<AnalysisSnapshot> {

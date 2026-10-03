@@ -1,4 +1,4 @@
-import type { AnalysisReport, ReportSummary } from './types';
+import type { AnalysisReport, LanguageModelInfo, ReportSummary } from './types';
 
 async function asJson<T>(res: Response): Promise<T> {
   const data = (await res.json().catch(() => ({}))) as { error?: string; message?: string };
@@ -23,6 +23,7 @@ export const api = {
     return fetch('/api/analyze/file', { method: 'POST', body: fd }).then((r) => asJson<AnalysisReport>(r));
   },
 
+  model: () => fetch('/api/model').then((r) => asJson<LanguageModelInfo>(r)),
   reports: () => fetch('/api/reports').then((r) => asJson<ReportSummary[]>(r)),
   report: (id: string) => fetch(`/api/reports/${id}`).then((r) => asJson<AnalysisReport>(r)),
   deleteReport: (id: string) =>

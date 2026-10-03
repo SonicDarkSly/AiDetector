@@ -5,11 +5,11 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const directory = join(root, 'server', 'data', 'llm');
-const uris = process.env.AIDETECTOR_MODEL
-  ? [process.env.AIDETECTOR_MODEL]
+const uris = process.env.MEFIANCE_MODEL
+  ? [process.env.MEFIANCE_MODEL]
   : JSON.parse(readFileSync(join(root, 'server', 'llm-models.json'), 'utf8')).likelihood;
 
-if (process.env.AIDETECTOR_MODEL === 'off') process.exit(0);
+if (process.env.MEFIANCE_MODEL === 'off') process.exit(0);
 
 const { resolveModelFile } = await import('node-llama-cpp');
 for (const uri of uris) {

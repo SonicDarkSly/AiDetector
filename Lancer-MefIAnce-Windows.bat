@@ -32,7 +32,7 @@ if errorlevel 1 (
 
 curl -s --max-time 2 http://localhost:3002/api/health 2>nul | findstr ok >nul
 if not errorlevel 1 (
-  echo [OK] AiDetector tourne deja - ouverture de la page.
+  echo [OK] MefIAnce tourne deja - ouverture de la page.
   start "" http://localhost:5174
   exit /b 0
 )
@@ -59,7 +59,7 @@ if errorlevel 1 (
   echo [OK] Modele d'analyse pret.
 )
 
-echo [3/4] Demarrage d'AiDetector...
+echo [3/4] Demarrage d'MefIAnce...
 start /b cmd /c "npm run dev"
 
 echo [4/4] Preparation en cours - compilation du serveur...
@@ -74,7 +74,7 @@ goto wait
 :ready
 start "" http://localhost:5174
 echo.
-echo [OK] AiDetector est ouvert : http://localhost:5174
+echo [OK] MefIAnce est ouvert : http://localhost:5174
 echo      Laissez cette fenetre ouverte pendant l'utilisation.
 echo      Pour arreter : fermez cette fenetre.
 pause >nul

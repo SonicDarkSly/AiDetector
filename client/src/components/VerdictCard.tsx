@@ -106,7 +106,7 @@ const UNUSED: Record<string, string> = {
   'too-short': 'texte trop court pour le modèle',
   skipped: 'non utilisé pour ce type de contenu',
   missing: 'pas encore téléchargé, relancez avec le lanceur',
-  disabled: 'désactivé (AIDETECTOR_MODEL=off)',
+  disabled: 'désactivé (MEFIANCE_MODEL=off)',
   error: 'chargement impossible, voir server/logs',
 };
 

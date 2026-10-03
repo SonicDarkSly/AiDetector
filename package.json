@@ -1,5 +1,5 @@
 {
-  "name": "ai-detector",
+  "name": "mefiance",
   "private": true,
   "version": "1.0.0",
   "description": "Détecteur local de textes et fichiers générés par IA (métadonnées, artefacts, caractères cachés, style).",

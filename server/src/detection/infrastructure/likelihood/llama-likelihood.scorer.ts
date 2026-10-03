@@ -1,7 +1,8 @@
 import { Injectable, Logger, type OnModuleDestroy } from '@nestjs/common';
-import { readFileSync } from 'node:fs';
+import { readFileSync, statSync } from 'node:fs';
 import { LLM_DIR, LLM_MODELS_FILE } from '../../../shared/config/paths.js';
 import type {
+  LanguageModelInfo,
   LikelihoodMeasure,
   LikelihoodScorer,
   LikelihoodStatus,
@@ -31,10 +32,50 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
   private loading: Promise<Loaded | null> | null = null;
   private queue: Promise<unknown> = Promise.resolve();
   private idleTimer: NodeJS.Timeout | null = null;
-  private state: LikelihoodStatus = process.env.AIDETECTOR_MODEL === 'off' ? 'disabled' : 'idle';
+  private state: LikelihoodStatus = process.env.MEFIANCE_MODEL === 'off' ? 'disabled' : 'idle';
 
   status(): LikelihoodStatus {
     return this.state;
+  }
+
+  async describe(): Promise<LanguageModelInfo> {
+    const uri = modelUris()[0] ?? null;
+    let sizeBytes: number | null = null;
+    if (uri && this.state !== 'disabled') {
+      try {
+        const nlc = await esmImport('node-llama-cpp');
+        for (const candidate of modelUris()) {
+          try {
+            const path = await nlc.resolveModelFile(candidate, {
+              directory: LLM_DIR,
+              download: false,
+              cli: false,
+            });
+            sizeBytes = statSync(path).size;
+            break;
+          } catch {
+            continue;
+          }
+        }
+        if (sizeBytes === null && this.state === 'idle') this.state = 'missing';
+      } catch {
+        sizeBytes = null;
+      }
+    }
+    const name = uri ? modelName(uri) : null;
+    return {
+      name,
+      status: this.state,
+      parameters: name?.match(/(\d+(?:\.\d+)?)B\b/i)?.[1]?.replace('.', ',') ?? null,
+      quantization:
+        uri
+          ?.split(':')
+          .pop()
+          ?.match(/^Q\w+$/i)?.[0] ?? null,
+      sizeBytes,
+      maxTokens: MAX_TOKENS,
+      contextSize: CONTEXT_SIZE,
+    };
   }
 
   modelName(): string | null {
@@ -169,8 +210,8 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
 }
 
 export function modelUris(): string[] {
-  if (process.env.AIDETECTOR_MODEL && process.env.AIDETECTOR_MODEL !== 'off')
-    return [process.env.AIDETECTOR_MODEL];
+  if (process.env.MEFIANCE_MODEL && process.env.MEFIANCE_MODEL !== 'off')
+    return [process.env.MEFIANCE_MODEL];
   try {
     return (JSON.parse(readFileSync(LLM_MODELS_FILE, 'utf8')) as { likelihood: string[] }).likelihood;
   } catch {

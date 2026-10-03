@@ -28,9 +28,9 @@ export default function App() {
   const screens = Grid.useBreakpoint();
   const isMobile = !screens.md;
 
-  const [dark, setDark] = useState(() => localStorage.getItem('aidetector-theme') === 'dark');
+  const [dark, setDark] = useState(() => localStorage.getItem('mefiance-theme') === 'dark');
   useEffect(() => {
-    localStorage.setItem('aidetector-theme', dark ? 'dark' : 'light');
+    localStorage.setItem('mefiance-theme', dark ? 'dark' : 'light');
     document.body.style.background = dark ? '#0a0a0a' : '#f5f6f8';
   }, [dark]);
 
@@ -72,7 +72,7 @@ export default function App() {
               width="36"
               height="36"
               viewBox="0 0 32 32"
-              aria-label="AiDetector"
+              aria-label="MefIAnce"
               style={{ flex: '0 0 auto' }}
             >
               <defs>
@@ -98,11 +98,11 @@ export default function App() {
                   display: 'inline-block',
                 }}
               >
-                AiDetector
+                Mef<span style={{ fontWeight: 800 }}>IA</span>nce
               </Title>
               <Text type="secondary" style={{ display: 'block' }}>
-                Ce texte ou ce fichier vient-il d'une IA ? Métadonnées, traces de copier-coller, caractères
-                cachés, modèle de langage local et style. 100 % local, rien ne sort de cette machine.
+                Ce texte ou ce fichier vient-il d'une IA ? Analyse 100 % locale : rien ne sort de cette
+                machine.
               </Text>
             </div>
           </Flex>

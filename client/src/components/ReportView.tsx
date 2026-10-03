@@ -13,7 +13,7 @@ const { Title } = Typography;
 
 export type ReportLayout = 'columns' | 'list' | 'summary';
 
-const STORAGE_KEY = 'aidetector-layout';
+const STORAGE_KEY = 'mefiance-layout';
 const LAYOUTS: { value: ReportLayout; label: string; icon: React.ReactNode }[] = [
   { value: 'columns', label: 'Deux colonnes', icon: <LayoutOutlined /> },
   { value: 'list', label: 'Une colonne, dans l’ordre de lecture', icon: <BarsOutlined /> },

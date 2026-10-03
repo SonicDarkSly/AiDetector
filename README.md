@@ -1,4 +1,4 @@
-# AiDetector
+# MefIAnce
 
 Application locale pour vérifier si un texte ou un fichier a été produit par une IA (ChatGPT, Claude,
 Gemini, Copilot, Perplexity, Mistral...). Aucun service externe : tout est analysé sur la machine.
@@ -7,9 +7,9 @@ Gemini, Copilot, Perplexity, Mistral...). Aucun service externe : tout est analy
 
 Double-clic sur le lanceur de votre système :
 
-- macOS : `Lancer-AiDetector-macOS.command`
-- Windows : `Lancer-AiDetector-Windows.bat`
-- Linux : `Lancer-AiDetector-Linux.sh`
+- macOS : `Lancer-MefIAnce-macOS.command`
+- Windows : `Lancer-MefIAnce-Windows.bat`
+- Linux : `Lancer-MefIAnce-Linux.sh`
 
 Au premier lancement, Node.js, les dépendances et le modèle d'analyse sont installés automatiquement. L'application s'ouvre sur
 http://localhost:5174 et reste accessible depuis les autres appareils du réseau local (adresse affichée
@@ -36,7 +36,7 @@ Formats acceptés : texte collé, PDF, Word (.docx), TXT, Markdown, code source.
 - **Code** : placeholders, commentaires « Step 1 », émojis dans les logs.
 - **Modèle de langage** : un petit modèle local (Qwen2.5 1,5B, GGUF, node-llama-cpp) mesure la
   prévisibilité du texte, token par token (méthode Fast-DetectGPT). Il ne génère rien. Téléchargé une seule
-  fois par le lanceur dans `server/data/llm` (environ 1 Go). `AIDETECTOR_MODEL=off` désactive la mesure.
+  fois par le lanceur dans `server/data/llm` (environ 1 Go). `MEFIANCE_MODEL=off` désactive la mesure.
 - **Style et rythme** : vocabulaire sur-représenté, tournures récurrentes, régularité des phrases.
 
 Le résultat sépare les preuves techniques des indices de style. Sans trace technique, un texte court est

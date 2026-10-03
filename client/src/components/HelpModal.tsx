@@ -14,8 +14,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
   return (
     <Modal open={open} onCancel={onClose} footer={null} title="Comment ça marche ?" width={760}>
       <Paragraph>
-        AiDetector combine trois familles d'indices : des <Text strong>traces techniques</Text> laissées par
-        les assistants et par les outils qui fabriquent les fichiers, une{' '}
+        MefIAnce combine trois familles d'indices : des <Text strong>traces techniques</Text> laissées par les
+        assistants et par les outils qui fabriquent les fichiers, une{' '}
         <Text strong>mesure de prévisibilité</Text> faite par un petit modèle de langage local, et des{' '}
         <Text strong>tendances de style</Text>. Tout est calculé sur cette machine : aucun texte ni fichier
         n'est envoyé sur Internet.

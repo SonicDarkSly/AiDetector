@@ -80,6 +80,16 @@ export interface LanguageModelUsage {
   elapsedMs?: number;
 }
 
+export interface LanguageModelInfo {
+  name: string | null;
+  status: 'ready' | 'idle' | 'missing' | 'disabled' | 'error';
+  parameters: string | null;
+  quantization: string | null;
+  sizeBytes: number | null;
+  maxTokens: number;
+  contextSize: number;
+}
+
 export interface AnalysisReport {
   id: string;
   analyzedAt: string;

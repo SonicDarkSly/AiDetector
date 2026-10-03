@@ -41,7 +41,7 @@ fi
 
 if curl -s --max-time 2 http://localhost:$API_PORT/api/health | grep -q ok \
    && curl -s -o /dev/null --max-time 2 http://localhost:$WEB_PORT; then
-  echo "AiDetector tourne déjà, ouverture de la page."
+  echo "MefIAnce tourne déjà, ouverture de la page."
   "$OPEN" http://localhost:$WEB_PORT
   exit 0
 fi
@@ -74,13 +74,13 @@ else
   echo "Modèle indisponible (hors ligne ?) : l'analyse fonctionnera sans lui."
 fi
 
-echo "Démarrage d'AiDetector..."
+echo "Démarrage d'MefIAnce..."
 npm run dev &
 DEV_PID=$!
 
 cleanup() {
   echo ""
-  echo "Arrêt d'AiDetector..."
+  echo "Arrêt d'MefIAnce..."
   kill -- -"$DEV_PID" 2>/dev/null
   wait "$DEV_PID" 2>/dev/null
   exit 0
@@ -107,7 +107,7 @@ else
 fi
 
 echo ""
-echo "AiDetector est ouvert : http://localhost:$WEB_PORT"
+echo "MefIAnce est ouvert : http://localhost:$WEB_PORT"
 if [ -n "$LOCAL_IP" ]; then
   echo "Accès réseau local (autre appareil du même réseau) : http://${LOCAL_IP}:$WEB_PORT"
 fi
