@@ -23,6 +23,7 @@ import { HistoryDrawer } from './components/HistoryDrawer';
 import { HelpModal } from './components/HelpModal';
 import { Logo, Wordmark } from './components/Logo';
 import { AnalysisOverlay } from './components/AnalysisOverlay';
+import { AiDisclaimer } from './components/AiDisclaimer';
 
 const { Title, Text } = Typography;
 
@@ -110,6 +111,8 @@ export default function App() {
           onText={(t) => void analysis.analyzeText(t)}
           onFile={(f) => void analysis.analyzeFile(f)}
         />
+
+        <AiDisclaimer report={report} />
 
         {analysis.error && (
           <Alert

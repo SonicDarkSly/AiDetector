@@ -105,9 +105,6 @@ export function ModelBadge({ busy }: { busy: boolean }) {
           tokens. Pas pour le code, ni pour les métadonnées et les traces techniques, vérifiées sans IA. Seul
           modèle de l&apos;application, chargé à la demande.
         </Text>
-        <Text type="warning" style={{ fontSize: 11.5, display: 'block', marginTop: 2 }}>
-          Une IA peut se tromper : son résultat est une indication, pas une preuve.
-        </Text>
       </div>
     </Flex>
   );

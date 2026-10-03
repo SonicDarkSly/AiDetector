@@ -1,4 +1,4 @@
-import { Alert, Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
+import { Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
 import type { AnalysisReport } from '../types';
 import { KIND_LABELS, LANGUAGE_LABELS, MEASURED_RATES, scoreColor } from '../constants';
@@ -98,19 +98,6 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           </Flex>
         </div>
       </div>
-      {report.modelScore != null && report.languageModel?.name && (
-        <Alert
-          type="warning"
-          showIcon
-          className="verdict-disclaimer"
-          message={
-            <span>
-              Une IA peut se tromper : la prévisibilité est mesurée par {report.languageModel.name}. Ce
-              résultat est une indication, pas une preuve.
-            </span>
-          }
-        />
-      )}
       <Text type="secondary" className="verdict-footer">
         Analysé le {formatDate(report.analyzedAt)} · {formatSize(source.size)} · {stats.words} mots ·{' '}
         {LANGUAGE_LABELS[stats.language]}
