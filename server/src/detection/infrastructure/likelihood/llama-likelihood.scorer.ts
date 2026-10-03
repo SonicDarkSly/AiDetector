@@ -210,8 +210,7 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
 }
 
 export function modelUris(): string[] {
-  if (process.env.MEFIANCE_MODEL && process.env.MEFIANCE_MODEL !== 'off')
-    return [process.env.MEFIANCE_MODEL];
+  if (process.env.MEFIANCE_MODEL && process.env.MEFIANCE_MODEL !== 'off') return [process.env.MEFIANCE_MODEL];
   try {
     return (JSON.parse(readFileSync(LLM_MODELS_FILE, 'utf8')) as { likelihood: string[] }).likelihood;
   } catch {

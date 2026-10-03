@@ -5,6 +5,8 @@ export const CALIBRATION = {
   minTokens: 20,
   fullReliabilityTokens: 60,
   maxLogit: 3.5,
+  // les textes IA du corpus font au plus 240 tokens : au-delà, le terme de longueur extrapolerait
+  maxCalibratedTokens: 240,
 };
 
 export const MEASURED = [

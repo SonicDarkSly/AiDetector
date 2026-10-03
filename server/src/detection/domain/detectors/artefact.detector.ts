@@ -240,6 +240,41 @@ const MARKDOWN_RE =
   /\*\*[^*\n]{2,80}\*\*|^#{1,4} \S.*$|^\s*(?:---|\*\*\*)\s*$|^```|^\|(?:\s*:?-{3,}:?\s*\|)+\s*$/gm;
 
 const HEAD_CHARS = 300;
+
+// Un vrai copier-coller vient d'un assistant, rarement de deux. Les marqueurs de trois assistants ou
+// plus dans le même texte signent un document qui en parle (article, guide), pas une réponse collée.
+const SIGNATURE_RULES = new Set([
+  'art-oaicite',
+  'art-oai-brackets',
+  'art-citeturn',
+  'art-gemini-cite',
+  'art-claude-tags',
+  'art-deepseek-cite',
+  'art-think',
+  'art-copilot-cite',
+  'art-grok-render',
+]);
+const DISCUSSION_MIN_VENDORS = 3;
+const QUOTED_MAX_POINTS = 15;
+
+function quoteMode(signals: Signal[], vendors: number): void {
+  const total = signals.reduce((sum, sig) => sum + sig.points, 0);
+  for (const sig of signals) {
+    sig.strength = 'faible';
+    sig.points = Math.max(1, Math.round((sig.points * QUOTED_MAX_POINTS) / total));
+    sig.vendors = sig.vendors?.map((h) => ({ ...h, weight: 1 }));
+  }
+  signals.push({
+    id: 'art-discussion',
+    category: 'artefact',
+    label: `Marqueurs de ${vendors} assistants différents : texte qui en parle`,
+    detail:
+      "Une réponse copiée vient d'un seul assistant. Trouver les marqueurs internes de plusieurs IA dans le même texte indique plutôt un document qui les cite en exemple (article, guide, cours). Ces marqueurs sont donc comptés comme de simples indices, pas comme des preuves.",
+    strength: 'info',
+    direction: 'neutre',
+    points: 0,
+  });
+}
 const TAIL_CHARS = 600;
 
 export class ArtefactDetector implements SignalDetector {
@@ -298,6 +333,13 @@ export class ArtefactDetector implements SignalDetector {
         count: hiddenUtm.length,
       });
     }
+
+    const signatures = new Set(
+      signals
+        .filter((sig) => SIGNATURE_RULES.has(sig.id))
+        .flatMap((sig) => (sig.vendors ?? []).filter((h) => h.weight >= 2).map((h) => h.vendor)),
+    );
+    if (signatures.size >= DISCUSSION_MIN_VENDORS) quoteMode(signals, signatures.size);
 
     if (doc.kind !== 'md' && doc.kind !== 'code') {
       const md = scan(text, MARKDOWN_RE, 'art-markdown', 'moyen');

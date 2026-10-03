@@ -3,11 +3,11 @@ import { CALIBRATION, CORPUS, MEASURED } from './calibration.js';
 import type { LikelihoodMeasure } from './likelihood-scorer.js';
 
 export function aiLogit(m: LikelihoodMeasure): number {
-  const { meanLogProb, logTokens, bias, maxLogit } = CALIBRATION;
+  const { meanLogProb, logTokens, bias, maxLogit, maxCalibratedTokens } = CALIBRATION;
   const z =
     bias +
     (meanLogProb.weight * (m.meanLogProb - meanLogProb.mean)) / meanLogProb.sd +
-    (logTokens.weight * (Math.log(m.tokens) - logTokens.mean)) / logTokens.sd;
+    (logTokens.weight * (Math.log(Math.min(m.tokens, maxCalibratedTokens)) - logTokens.mean)) / logTokens.sd;
   return Math.max(-maxLogit, Math.min(maxLogit, z));
 }
 
@@ -26,12 +26,17 @@ function measuredAt(tokens: number) {
   );
 }
 
+const HUMAN_CAP = 15;
+const TECHNICAL_HUMAN_CAP = 5;
+
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 
-export function likelihoodSignal(m: LikelihoodMeasure): Signal {
+export function likelihoodSignal(m: LikelihoodMeasure, technical = false): Signal {
   const p = aiProbability(m);
   const r = reliability(m.tokens);
-  const points = Math.round(11 * r * aiLogit(m));
+  // Côté « humain », la mesure n'est qu'un indice : un texte d'IA retouché, très technique ou
+  // demandé dans un style familier sort aussi peu prévisible.
+  const points = Math.max(technical ? -TECHNICAL_HUMAN_CAP : -HUMAN_CAP, Math.round(11 * r * aiLogit(m)));
   const ref = measuredAt(m.tokens);
   const evidence = [
     `Modèle : ${m.model}, ${m.tokens} tokens en ${(m.elapsedMs / 1000).toFixed(1)} s`,
@@ -63,10 +68,18 @@ export function likelihoodSignal(m: LikelihoodMeasure): Signal {
       : `Texte peu prévisible pour un modèle de langage (${pct(p)})`,
     detail: ia
       ? "Les mots choisis sont nettement plus probables que ce qu'un humain écrit d'habitude : c'est la signature statistique d'un texte généré."
-      : "Les choix de mots sont moins attendus que ceux d'un texte généré : profil plutôt humain.",
-    strength: extreme && r === 1 ? 'fort' : Math.abs(points) >= 8 ? 'moyen' : 'faible',
+      : "Les choix de mots sont moins attendus que ceux d'un texte généré : profil plutôt humain. Ce n'est qu'un indice : un texte d'IA retouché, très technique ou écrit dans un style familier peut aussi sortir ici.",
+    strength: ia && extreme && r === 1 ? 'fort' : Math.abs(points) >= 8 ? 'moyen' : 'faible',
     direction: Math.abs(points) < 3 ? 'neutre' : ia ? 'ia' : 'humain',
     points,
-    evidence: r < 1 ? [...evidence, `Fiabilité réduite : texte court (${pct(r)})`] : evidence,
+    evidence: [
+      ...evidence,
+      ...(r < 1 ? [`Fiabilité réduite : texte court (${pct(r)})`] : []),
+      ...(technical
+        ? [
+            "Document technique (code, tableaux, jargon) : mesure hors du domaine de calibration, un texte d'IA de ce type sort souvent « peu prévisible »",
+          ]
+        : []),
+    ],
   };
 }

@@ -4,10 +4,14 @@ import type { LanguageModelUsage, LikelihoodScorer } from './likelihood/likeliho
 import { aiProbability, likelihoodSignal, reliability } from './likelihood/likelihood.policy.js';
 import type { Highlight, Signal, SignalDetector } from './signal/signal.js';
 import { cleanText } from './text/text-cleaner.js';
+import { proseRatio, proseSample } from './text/prose-sample.js';
 import { computeStats } from './text/text-stats.js';
 import { evaluate, type ModelEstimate } from './verdict/verdict.policy.js';
 import { evaluateOrigins } from './origin/origin.policy.js';
 import { identifySoftware } from './origin/software.js';
+
+// sous ce taux de prose (code, tableaux, sommaire), un document sort du domaine de calibration
+const TECHNICAL_PROSE_RATIO = 0.75;
 
 const MAX_ANALYZED_CHARS = 400_000;
 const MAX_DISPLAY_CHARS = 60_000;
@@ -49,9 +53,11 @@ export class Analyzer {
       ? { name: this.scorer.modelName(), status: 'skipped' }
       : null;
     if (this.scorer && doc.kind !== 'code' && stats.words >= 5) {
-      const measure = await this.scorer.measure(doc.text);
+      const isDocument = doc.kind === 'pdf' || doc.kind === 'docx';
+      const sample = isDocument ? proseSample(doc.text) : doc.text;
+      const measure = await this.scorer.measure(sample);
       if (measure) {
-        signals.push(likelihoodSignal(measure));
+        signals.push(likelihoodSignal(measure, isDocument && proseRatio(doc.text) < TECHNICAL_PROSE_RATIO));
         model = { probability: aiProbability(measure), reliability: reliability(measure.tokens) };
         languageModel = {
           name: measure.model,

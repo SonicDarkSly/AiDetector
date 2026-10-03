@@ -53,6 +53,7 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           <Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 13 }}>
             {report.summary}
           </Paragraph>
+          {undetermined && report.modelScore != null && <Trend score={report.modelScore} />}
           <Flex vertical gap={4}>
             <Tooltip title="Métadonnées, artefacts de copier-coller, caractères cachés : des traces concrètes, fiables quand elles existent.">
               <div>
@@ -103,11 +104,31 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
 
 function Reliability({ tokens }: { tokens?: number }) {
   if (!tokens) return null;
+  if (tokens < MEASURED_RATES[0].tokens)
+    return (
+      <Text type="warning" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
+        Sur {tokens} tokens seulement : valeur indicative, non fiable
+      </Text>
+    );
   const rate = [...MEASURED_RATES].reverse().find((r) => tokens >= r.tokens) ?? MEASURED_RATES[0];
   return (
     <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
       Sur {tokens} tokens : {rate.detected} % des textes IA repérés, {rate.falsePositives} % de textes humains
       signalés à tort
     </Text>
+  );
+}
+
+function Trend({ score }: { score: number }) {
+  const lean = score < 35 ? 'plutôt humain' : score > 65 ? 'plutôt IA' : 'aucune tendance nette';
+  return (
+    <Tooltip title="Mesure faite sur trop peu de mots pour conclure : elle donne une direction, pas un verdict.">
+      <Tag
+        color={score < 35 ? 'green' : score > 65 ? 'volcano' : 'default'}
+        style={{ marginBottom: 12, cursor: 'help' }}
+      >
+        Tendance indicative : {lean} ({score} % IA)
+      </Tag>
+    </Tooltip>
   );
 }

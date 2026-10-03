@@ -303,7 +303,7 @@ export class MetadataDetector implements SignalDetector {
           "Chrome sans interface, sous Linux, horloge en UTC : le PDF a été produit par un script sur un serveur, pas depuis un ordinateur personnel. C'est la méthode des assistants IA qui écrivent une page HTML puis l'impriment en PDF dans leur bac à sable (Claude, ChatGPT). Beaucoup de sites web génèrent aussi leurs PDF ainsi (factures, billets) : indice, pas preuve.",
         strength: 'moyen',
         direction: 'ia',
-        points: 14,
+        points: 10,
         vendors: [
           { vendor: 'script', weight: 2 },
           { vendor: 'claude', weight: 1 },
@@ -339,6 +339,9 @@ export class MetadataDetector implements SignalDetector {
         points: 2,
       });
     }
+    // le bac à sable Linux résume déjà « fabriqué par un programme » et « horloge en UTC »
+    if (out.some((x) => x.id === 'meta-headless-sandbox'))
+      return out.filter((x) => (x.id !== 'meta-pdf-generator' || x.points > 5) && x.id !== 'meta-pdf-utc');
     return out;
   }
 
