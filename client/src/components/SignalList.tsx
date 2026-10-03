@@ -97,7 +97,11 @@ function SignalItem({ s }: { s: Signal }) {
   );
 }
 
-export function SignalList({ signals }: { signals: Signal[] }) {
+export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
+  const main = all.filter(
+    (s) => s.direction !== 'neutre' && (s.strength === 'fort' || s.strength === 'moyen'),
+  );
+  const signals = mainOnly && main.length > 0 ? main : all;
   const groups = ORDER.map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) })).filter(
     (g) => g.items.length > 0,
   );

@@ -3,11 +3,9 @@ import {
   Alert,
   Badge,
   Button,
-  Col,
   ConfigProvider,
   Flex,
   Grid,
-  Row,
   Space,
   Switch,
   Tooltip,
@@ -20,12 +18,7 @@ import { IA_GRADIENT, PRIMARY } from './constants';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useHistory } from './hooks/useHistory';
 import { InputPanel } from './components/InputPanel';
-import { VerdictCard } from './components/VerdictCard';
-import { OriginCard } from './components/OriginCard';
-import { SignalList } from './components/SignalList';
-import { MetadataTable } from './components/MetadataTable';
-import { StatsCard } from './components/StatsCard';
-import { AnnotatedText } from './components/AnnotatedText';
+import { ReportView } from './components/ReportView';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { HelpModal } from './components/HelpModal';
 
@@ -154,32 +147,7 @@ export default function App() {
           />
         )}
 
-        {report && (
-          <div id="report">
-            <Row gutter={[16, 16]}>
-              <Col xs={24} lg={10}>
-                <Flex vertical gap={16}>
-                  <VerdictCard report={report} />
-                  <OriginCard report={report} />
-                </Flex>
-              </Col>
-              <Col xs={24} lg={14}>
-                <Flex vertical gap={16}>
-                  <SignalList key={`signals-${report.id}`} signals={report.signals} />
-                  <MetadataTable metadata={report.metadata} kind={report.source.kind} />
-                </Flex>
-              </Col>
-              {report.source.kind !== 'code' && (
-                <Col span={24}>
-                  <StatsCard stats={report.stats} />
-                </Col>
-              )}
-              <Col span={24}>
-                <AnnotatedText key={`text-${report.id}`} report={report} />
-              </Col>
-            </Row>
-          </div>
-        )}
+        {report && <ReportView report={report} />}
       </div>
 
       <HistoryDrawer

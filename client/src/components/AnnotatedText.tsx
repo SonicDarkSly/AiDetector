@@ -49,7 +49,8 @@ function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactN
   return out;
 }
 
-export function AnnotatedText({ report }: { report: AnalysisReport }) {
+export function AnnotatedText({ report, tall = false }: { report: AnalysisReport; tall?: boolean }) {
+  const boxClass = `annotated ${report.source.kind === 'code' ? 'code' : ''} ${tall ? 'tall' : ''}`;
   const [showInvisible, setShowInvisible] = useState(true);
   const [showClean, setShowClean] = useState(false);
   const labels = useMemo(() => new Map(report.signals.map((s) => [s.id, s.label])), [report.signals]);
@@ -128,7 +129,7 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
               </Space>
             }
           />
-          <div className={`annotated ${report.source.kind === 'code' ? 'code' : ''}`}>{cleaned.text}</div>
+          <div className={boxClass}>{cleaned.text}</div>
         </>
       ) : (
         <>
@@ -149,7 +150,7 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
               (survolez un passage pour voir le signal)
             </Text>
           </Flex>
-          <div className={`annotated ${report.source.kind === 'code' ? 'code' : ''}`}>{content}</div>
+          <div className={boxClass}>{content}</div>
           {report.textTruncated && (
             <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: 8 }}>
               Affichage limité aux 60 000 premiers caractères (l'analyse porte sur le texte complet, jusqu'à

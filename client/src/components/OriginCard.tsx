@@ -58,9 +58,12 @@ function Row({ o }: { o: OriginScore }) {
   );
 }
 
-export function OriginCard({ report }: { report: AnalysisReport }) {
-  const origins = originsOf(report);
-  const ai = origins.filter((o) => o.kind === 'ia');
+export function OriginCard({ report, compact = false }: { report: AnalysisReport; compact?: boolean }) {
+  const all = originsOf(report);
+  const shown = compact ? all.filter((o) => (o.score ?? 0) > 0 || o.level === 'trace') : all;
+  const hidden = all.filter((o) => !shown.includes(o));
+  const origins = shown;
+  const ai = all.filter((o) => o.kind === 'ia');
   const anyTrace = ai.some((o) => o.level === 'trace');
   const undetermined = ai.every((o) => o.score === null);
 
@@ -91,6 +94,11 @@ export function OriginCard({ report }: { report: AnalysisReport }) {
         {origins.map((o) => (
           <Row key={o.id} o={o} />
         ))}
+        {hidden.length > 0 && (
+          <Text type="secondary" style={{ fontSize: 11 }}>
+            À 0 % : {hidden.map((o) => o.label).join(', ')}
+          </Text>
+        )}
       </Flex>
     </Card>
   );
