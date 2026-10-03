@@ -99,8 +99,18 @@ function SignalItem({ s }: { s: Signal }) {
   );
 }
 
+const ACCENTS = { technical: '#ff4d4f', indicators: '#9254de' } as const;
+type SectionKind = keyof typeof ACCENTS;
+
+function useDark(): boolean {
+  const { token } = theme.useToken();
+  return token.colorTextBase === '#fff';
+}
+
 function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[] }) {
   const { token } = theme.useToken();
+  const dark = useDark();
+  const separator = dark ? 'rgba(255,255,255,0.09)' : token.colorBorderSecondary;
   const groups = order
     .map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) }))
     .filter((g) => g.items.length > 0);
@@ -114,7 +124,7 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
         const hu = items.filter((s) => s.direction === 'humain').length;
         return {
           key: cat,
-          style: i > 0 ? { borderTop: `1px solid ${token.colorBorderSecondary}` } : undefined,
+          style: i > 0 ? { borderTop: `1px solid ${separator}` } : undefined,
           label: (
             <Flex justify="space-between" align="center" wrap gap={6}>
               <span>
@@ -152,31 +162,52 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
     );
   }
   const proofs = technical.filter((s) => s.direction === 'ia' && s.points > 0).length;
-  const section = (danger: boolean, first: boolean): CSSProperties => ({
-    background: danger ? token.colorErrorBg : token.colorFillSecondary,
-    color: danger ? token.colorErrorText : token.colorTextSecondary,
-    borderTop: first ? 'none' : `1px solid ${token.colorBorder}`,
-    borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
-  });
+  const dark = useDark();
+  const section = (kind: SectionKind, first: boolean): CSSProperties => {
+    const danger = kind === 'technical';
+    if (dark) {
+      const rgb = danger ? '255, 77, 79' : '146, 84, 222';
+      return {
+        background: `linear-gradient(90deg, rgba(${rgb}, 0.26), rgba(${rgb}, 0.04) 70%)`,
+        color: danger ? '#ff8a8c' : '#c4a1f5',
+        borderLeft: `3px solid ${ACCENTS[kind]}`,
+        borderTop: first ? 'none' : '1px solid rgba(255,255,255,0.08)',
+        borderBottom: `1px solid rgba(${rgb}, 0.35)`,
+      };
+    }
+    return {
+      background: danger ? token.colorErrorBg : token.colorFillSecondary,
+      color: danger ? token.colorErrorText : token.colorTextSecondary,
+      borderTop: first ? 'none' : `1px solid ${token.colorBorder}`,
+      borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
+    };
+  };
+  const block = (kind: SectionKind): CSSProperties | undefined =>
+    dark ? { borderLeft: `3px solid ${ACCENTS[kind]}55` } : undefined;
   return (
     <Card size="small" title="Indices détectés" styles={{ body: { padding: 0 } }}>
-      <div className="signal-section" style={section(true, true)}>
+      <div className="signal-section" style={section('technical', true)}>
         <span>Preuves techniques</span>
         {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
       </div>
-      {technical.length > 0 ? (
-        <Groups signals={technical} order={TECHNICAL} />
-      ) : (
-        <Text type="secondary" style={{ display: 'block', padding: '10px 16px', fontSize: 13 }}>
-          Aucune trace technique : ni métadonnée d'IA, ni artefact de chatbot, ni caractère caché.
-        </Text>
-      )}
+      <div style={block('technical')}>
+        {technical.length > 0 ? (
+          <Groups signals={technical} order={TECHNICAL} />
+        ) : (
+          <Text type="secondary" style={{ display: 'block', padding: '10px 16px', fontSize: 13 }}>
+            Aucune trace technique : ni métadonnée d'IA, ni artefact de chatbot, ni caractère caché.
+          </Text>
+        )}
+      </div>
       {indicators.length > 0 && (
         <>
-          <div className="signal-section" style={section(false, false)}>
+          {dark && <div className="signal-gap" />}
+          <div className="signal-section" style={section('indicators', dark)}>
             <span>Indices statistiques et de style</span>
           </div>
-          <Groups signals={indicators} order={INDICATORS} />
+          <div style={block('indicators')}>
+            <Groups signals={indicators} order={INDICATORS} />
+          </div>
         </>
       )}
     </Card>
