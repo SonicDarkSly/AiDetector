@@ -77,7 +77,7 @@ familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libér
 Le modèle de langage ne mesure pas le code. Les indices viennent des commentaires : typographie de
 rédaction impossible à taper au clavier (tirets longs, flèches, guillemets « », points de suspension),
 en-têtes de fichier « RÔLE — description », phrases de chatbot, placeholders (`YOUR_API_KEY`,
-`# Example usage`), émojis dans les logs. Mesuré sur 70 fichiers écrits par Claude et 750 fichiers de
+`# Example usage`), émojis dans les logs. Mesuré sur 70 fichiers écrits par Claude et 225 fichiers de
 bibliothèques open source : 54 fichiers IA sur 70 au-dessus de 50 %, aucun fichier humain.
 
 ### Style et rythme
@@ -94,6 +94,8 @@ seulement : le style seul ne dépasse pas environ 60 %.
   « non identifiable » : aucun outil ne peut honnêtement dire lequel a écrit un texte copié proprement.
 - **Indices détectés**, **Métadonnées**, **Statistiques**, **Texte analysé** (passages surlignés et libellés,
   caractères invisibles, version nettoyée à copier).
+- **Disposition** : deux colonnes, une colonne ou résumé. Le bouton « Organiser » permet de déplacer les
+  blocs par glisser-déposer (colonne gauche, droite ou pleine largeur), mémorisé pour chaque mode.
 
 ## Limites
 

@@ -102,7 +102,10 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
           </li>
           <li>
             Le bouton en haut à droite du rapport change la disposition : deux colonnes, une colonne, ou
-            résumé. Un bandeau « Analyse incomplète » signale un fichier dont le texte n'a pas pu être lu.
+            résumé. « Organiser » permet de déplacer les blocs par glisser-déposer : colonne gauche, colonne
+            droite ou pleine largeur (ou simplement l'ordre en mode une colonne). La disposition est mémorisée
+            pour chaque mode. Un bandeau « Analyse incomplète » signale un fichier dont le texte n'a pas pu
+            être lu.
           </li>
         </ul>
       </Paragraph>
