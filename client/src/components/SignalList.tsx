@@ -1,4 +1,4 @@
-import { Card, Collapse, Empty, Flex, Tag, Tooltip, Typography } from 'antd';
+import { Card, Collapse, Empty, Flex, Tag, Tooltip, Typography, theme } from 'antd';
 import {
   BarChartOutlined,
   CodeOutlined,
@@ -11,7 +11,7 @@ import {
   RobotOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import type { Signal, SignalCategory } from '../types';
 import { CATEGORY_HINTS, CATEGORY_LABELS, STRENGTH_COLORS, STRENGTH_LABELS } from '../constants';
 
@@ -51,8 +51,9 @@ function DirectionIcon({ s }: { s: Signal }) {
 }
 
 function SignalItem({ s }: { s: Signal }) {
+  const { token } = theme.useToken();
   return (
-    <div style={{ padding: '8px 0', borderBottom: '1px solid rgba(128,128,128,0.15)' }}>
+    <div style={{ padding: '8px 0', borderBottom: `1px solid ${token.colorSplit}` }}>
       <Flex gap={8} align="flex-start">
         <span style={{ marginTop: 3 }}>
           <DirectionIcon s={s} />
@@ -99,6 +100,7 @@ function SignalItem({ s }: { s: Signal }) {
 }
 
 function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[] }) {
+  const { token } = theme.useToken();
   const groups = order
     .map((cat) => ({ cat, items: signals.filter((s) => s.category === cat) }))
     .filter((g) => g.items.length > 0);
@@ -107,11 +109,12 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
       bordered={false}
       ghost
       defaultActiveKey={groups.map((g) => g.cat)}
-      items={groups.map(({ cat, items }) => {
+      items={groups.map(({ cat, items }, i) => {
         const ia = items.filter((s) => s.direction === 'ia').length;
         const hu = items.filter((s) => s.direction === 'humain').length;
         return {
           key: cat,
+          style: i > 0 ? { borderTop: `1px solid ${token.colorBorderSecondary}` } : undefined,
           label: (
             <Flex justify="space-between" align="center" wrap gap={6}>
               <span>
@@ -134,6 +137,7 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
 }
 
 export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
+  const { token } = theme.useToken();
   const main = all.filter(
     (s) => s.direction !== 'neutre' && (s.strength === 'fort' || s.strength === 'moyen'),
   );
@@ -148,9 +152,15 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
     );
   }
   const proofs = technical.filter((s) => s.direction === 'ia' && s.points > 0).length;
+  const section = (danger: boolean, first: boolean): CSSProperties => ({
+    background: danger ? token.colorErrorBg : token.colorFillSecondary,
+    color: danger ? token.colorErrorText : token.colorTextSecondary,
+    borderTop: first ? 'none' : `1px solid ${token.colorBorder}`,
+    borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
+  });
   return (
     <Card size="small" title="Indices détectés" styles={{ body: { padding: 0 } }}>
-      <div className="signal-section technical">
+      <div className="signal-section" style={section(true, true)}>
         <span>Preuves techniques</span>
         {proofs > 0 && <Tag color="red">{proofs} trouvée(s)</Tag>}
       </div>
@@ -163,7 +173,7 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
       )}
       {indicators.length > 0 && (
         <>
-          <div className="signal-section">
+          <div className="signal-section" style={section(false, false)}>
             <span>Indices statistiques et de style</span>
           </div>
           <Groups signals={indicators} order={INDICATORS} />
