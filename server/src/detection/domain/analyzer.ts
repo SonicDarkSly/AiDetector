@@ -1,6 +1,6 @@
 import { Analysis } from './analysis.js';
 import type { SourceDocument } from './document/source-document.js';
-import type { LikelihoodScorer } from './likelihood/likelihood-scorer.js';
+import type { LanguageModelUsage, LikelihoodScorer } from './likelihood/likelihood-scorer.js';
 import { aiProbability, likelihoodSignal, reliability } from './likelihood/likelihood.policy.js';
 import type { Highlight, Signal, SignalDetector } from './signal/signal.js';
 import { cleanText } from './text/text-cleaner.js';
@@ -45,13 +45,27 @@ export class Analyzer {
     }
 
     let model: ModelEstimate | null = null;
+    let languageModel: LanguageModelUsage | null = this.scorer
+      ? { name: this.scorer.modelName(), status: 'skipped' }
+      : null;
     if (this.scorer && doc.kind !== 'code' && stats.words >= 5) {
       const measure = await this.scorer.measure(doc.text);
       if (measure) {
         signals.push(likelihoodSignal(measure));
         model = { probability: aiProbability(measure), reliability: reliability(measure.tokens) };
+        languageModel = {
+          name: measure.model,
+          status: 'used',
+          tokens: measure.tokens,
+          elapsedMs: measure.elapsedMs,
+        };
       } else {
         signals.push(this.unavailable());
+        const status = this.scorer.status();
+        languageModel = {
+          name: this.scorer.modelName(),
+          status: status === 'ready' || status === 'idle' ? 'too-short' : status,
+        };
       }
     }
 
@@ -77,6 +91,7 @@ export class Analyzer {
       {
         source: { kind: doc.kind, filename: doc.filename, mimetype: doc.mimetype, size: input.size },
         ...verdict,
+        languageModel,
         origins: evaluateOrigins(signals, software, verdict.undetermined ? null : verdict.score / 100),
         signals,
         metadata,

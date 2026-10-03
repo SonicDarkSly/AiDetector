@@ -73,6 +73,13 @@ export interface OriginScore {
   vendor?: Vendor;
 }
 
+export interface LanguageModelUsage {
+  name: string | null;
+  status: 'used' | 'too-short' | 'skipped' | 'ready' | 'idle' | 'missing' | 'disabled' | 'error';
+  tokens?: number;
+  elapsedMs?: number;
+}
+
 export interface AnalysisReport {
   id: string;
   analyzedAt: string;
@@ -81,6 +88,7 @@ export interface AnalysisReport {
   technicalScore: number;
   styleScore: number;
   modelScore?: number | null;
+  languageModel?: LanguageModelUsage | null;
   verdict: string;
   undetermined?: boolean;
   confidence: 'faible' | 'moyenne' | 'élevée';

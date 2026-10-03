@@ -37,6 +37,12 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     return this.state;
   }
 
+  modelName(): string | null {
+    if (this.state === 'disabled') return null;
+    const uri = modelUris()[0];
+    return uri ? modelName(uri) : null;
+  }
+
   measure(text: string): Promise<LikelihoodMeasure | null> {
     if (this.state === 'disabled') return Promise.resolve(null);
     const run = this.queue.then(() => this.run(text));
