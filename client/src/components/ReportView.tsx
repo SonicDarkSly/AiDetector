@@ -41,7 +41,9 @@ const { Title, Text } = Typography;
 
 export type ReportLayout = 'columns' | 'list' | 'summary';
 type BlockId = 'verdict' | 'origins' | 'signals' | 'metadata' | 'stats' | 'text';
-type Zone = 'left' | 'right' | 'full' | 'main';
+type Zone = 'top' | 'left' | 'right' | 'full' | 'main';
+
+const ZONES: Zone[] = ['top', 'left', 'right', 'full', 'main'];
 type Arrangement = Partial<Record<Zone, BlockId[]>>;
 
 const STORAGE_KEY = 'mefiance-layout';
@@ -54,9 +56,9 @@ const LAYOUTS: { value: ReportLayout; label: string; icon: ReactNode }[] = [
 ];
 
 const DEFAULTS: Record<ReportLayout, Arrangement> = {
-  columns: { left: ['verdict', 'origins', 'stats'], right: ['signals', 'metadata'], full: ['text'] },
+  columns: { top: [], left: ['verdict', 'origins', 'stats'], right: ['signals', 'metadata'], full: ['text'] },
   list: { main: ['verdict', 'origins', 'signals', 'metadata', 'stats', 'text'] },
-  summary: { left: ['verdict', 'origins'], right: ['signals'] },
+  summary: { top: [], left: ['verdict', 'origins'], right: ['signals'], full: [] },
 };
 
 const BLOCK_LABELS: Record<BlockId, string> = {
@@ -69,9 +71,10 @@ const BLOCK_LABELS: Record<BlockId, string> = {
 };
 
 const ZONE_LABELS: Record<Zone, string> = {
+  top: 'Pleine largeur, en haut',
   left: 'Colonne gauche',
   right: 'Colonne droite',
-  full: 'Pleine largeur',
+  full: 'Pleine largeur, en bas',
   main: 'Ordre des blocs',
 };
 
@@ -89,14 +92,14 @@ function savedArrangement(layout: ReportLayout): Arrangement {
     const zones = Object.keys(fallback) as Zone[];
     const expected = zones.flatMap((z) => fallback[z] ?? []).sort();
     const found = zones.flatMap((z) => parsed[z] ?? []).sort();
-    return JSON.stringify(expected) === JSON.stringify(found) ? parsed : fallback;
+    return JSON.stringify(expected) === JSON.stringify(found) ? { ...fallback, ...parsed } : fallback;
   } catch {
     return fallback;
   }
 }
 
 function zoneOf(arrangement: Arrangement, id: string): Zone | null {
-  if (id in arrangement) return id as Zone;
+  if (ZONES.includes(id as Zone)) return id as Zone;
   return (Object.keys(arrangement) as Zone[]).find((z) => arrangement[z]?.includes(id as BlockId)) ?? null;
 }
 
@@ -132,6 +135,7 @@ function DropZone({
   render: (id: BlockId, zone: Zone) => ReactNode;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: zone, disabled: !editing });
+  if (!editing && ids.length === 0) return null;
   return (
     <SortableContext id={zone} items={ids} strategy={verticalListSortingStrategy}>
       <div ref={setNodeRef} className={`report-zone${editing ? ' editing' : ''}${isOver ? ' over' : ''}`}>
@@ -271,7 +275,7 @@ export function ReportView({ report }: { report: AnalysisReport }) {
         <Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 10 }}>
           {layout === 'list'
             ? 'Faites glisser un bloc par sa poignée pour changer l’ordre.'
-            : 'Faites glisser un bloc par sa poignée : colonne gauche, colonne droite ou pleine largeur.'}
+            : 'Faites glisser un bloc par sa poignée : pleine largeur en haut, colonne gauche, colonne droite ou pleine largeur en bas.'}
         </Text>
       )}
 
@@ -285,13 +289,14 @@ export function ReportView({ report }: { report: AnalysisReport }) {
           zone('main')
         ) : (
           <Row gutter={[16, 16]}>
+            {(editing || (arrangement.top ?? []).length > 0) && <Col span={24}>{zone('top')}</Col>}
             <Col xs={24} lg={summary ? 12 : 10}>
               {zone('left')}
             </Col>
             <Col xs={24} lg={summary ? 12 : 14}>
               {zone('right')}
             </Col>
-            {!summary && <Col span={24}>{zone('full')}</Col>}
+            {(editing || (arrangement.full ?? []).length > 0) && <Col span={24}>{zone('full')}</Col>}
           </Row>
         )}
       </DndContext>

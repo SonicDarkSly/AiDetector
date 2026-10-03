@@ -95,7 +95,8 @@ seulement : le style seul ne dépasse pas environ 60 %.
 - **Indices détectés**, **Métadonnées**, **Statistiques**, **Texte analysé** (passages surlignés et libellés,
   caractères invisibles, version nettoyée à copier).
 - **Disposition** : deux colonnes, une colonne ou résumé. Le bouton « Organiser » permet de déplacer les
-  blocs par glisser-déposer (colonne gauche, droite ou pleine largeur), mémorisé pour chaque mode.
+  blocs par glisser-déposer (pleine largeur en haut ou en bas, colonne gauche ou droite), mémorisé pour
+  chaque mode.
 
 ## Limites
 
