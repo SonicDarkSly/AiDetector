@@ -166,14 +166,14 @@ export class MetadataDetector implements SignalDetector {
 
     const CONTENT_FIELDS = new Set(['Titre', 'Sujet', 'Mots-clés', 'Description']);
     const EXPORT_TITLE_RE =
-      /^\s*(chat\s?gpt|claude|gemini|copilot|perplexity|le chat|mistral|deepseek|grok)\s*[-\u2013\u2014|:·]/i;
+      /^\s*(chat\s?gpt|claude|gemini|copilot|perplexity|le chat|mistral(?:\s?vibe)?|deepseek|grok)\s*[-\u2013\u2014|:·]/i;
     const named: string[] = [];
     let toolLevel = false;
     const vendorHints = new Map<Vendor, number>();
 
     const PERSON_FIELDS = new Set(['Auteur', 'Modifié par']);
     const EXACT_AI_RE =
-      /^\s*(chat\s?gpt|openai|claude(\s*ai)?|anthropic|(google\s*)?gemini|bard|(microsoft\s*)?copilot|perplexity(\s*ai)?|mistral(\s*ai)?|le chat|deepseek|grok)\s*$/i;
+      /^\s*(chat\s?gpt|openai|claude(\s*ai)?|anthropic|(google\s*)?gemini|bard|(microsoft\s*)?copilot|perplexity(\s*ai)?|mistral(\s*(?:ai|vibe))?|le chat|deepseek|grok)\s*$/i;
     for (const [label, value] of fields) {
       if (!value) continue;
       if (PERSON_FIELDS.has(label) && !EXACT_AI_RE.test(value)) continue;

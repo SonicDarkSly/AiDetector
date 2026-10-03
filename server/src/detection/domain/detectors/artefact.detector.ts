@@ -136,7 +136,7 @@ const RULES: ArtefactRule[] = [
   },
   {
     id: 'art-self-vendor',
-    re: /(?:je suis|i am|i['’]m)\s+(?:chat\s?gpt|claude|gemini|copilot|le chat|deepseek|grok|meta ai|qwen)\b|(?:développée?|créée?|conçue?|entraînée?) par (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b|(?:developed|created|trained|built) by (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b/gi,
+    re: /(?:je suis|i am|i['’]m)\s+(?:chat\s?gpt|claude|gemini|copilot|le chat|(?:mistral\s)?vibe|deepseek|grok|meta ai|qwen)\b|(?:développée?|créée?|conçue?|entraînée?) par (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b|(?:developed|created|trained|built) by (?:openai|anthropic|google|microsoft|mistral(?: ai)?|deepseek|xai|meta|alibaba)\b/gi,
     label: "L'IA se nomme dans le texte",
     detail:
       "L'assistant se présente (« Je suis Claude… », « développé par Google… ») : il se désigne lui-même.",
@@ -175,7 +175,7 @@ const RULES: ArtefactRule[] = [
     re: /n['’]hésite[sz]? pas à (?:me )?(?:demander|dire|faire savoir|revenir vers moi)|j['’]espère que (?:cela|ça|ceci) (?:vous|t['’]) ?(?:aide|aidera|sera utile|conviendra)|(?:souhaite[sz]?|voulez|veux)[- ](?:vous|tu) que je|tu veux que je|dis-moi si tu (?:veux|souhaites|préfères)|dites-moi si vous (?:voulez|souhaitez|préférez)|je peux aussi (?:te|vous) (?:proposer|préparer|faire|rédiger)|si tu (?:le )?veux,? je peux|si vous le souhaitez,? je peux|let me know if (?:you|there)|i hope this helps|feel free to (?:ask|reach out|let me know)|would you like me to|do you want me to|if you(?:'d)? like,? i can|happy to help/gi,
     label: 'Phrase de conclusion / proposition de chatbot',
     detail:
-      "Le texte se termine comme une réponse d'assistant (« Souhaitez-vous que je… », « N'hésitez pas à me demander… »). Commun à tous les assistants (ChatGPT, Gemini, Claude, Le Chat…).",
+      "Le texte se termine comme une réponse d'assistant (« Souhaitez-vous que je… », « N'hésitez pas à me demander… »). Commun à tous les assistants (ChatGPT, Gemini, Claude, Vibe…).",
     strength: 'moyen',
     points: 22,
     zone: 'tail',

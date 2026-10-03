@@ -17,7 +17,7 @@ export const VENDOR_LABELS: Record<Vendor, string> = {
   gemini: 'Gemini (Google)',
   copilot: 'Copilot (Microsoft)',
   perplexity: 'Perplexity',
-  mistral: 'Le Chat (Mistral)',
+  mistral: 'Vibe (Mistral)',
   deepseek: 'DeepSeek',
   grok: 'Grok (xAI)',
   meta: 'Meta AI',
