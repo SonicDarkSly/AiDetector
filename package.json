@@ -2,7 +2,7 @@
   "name": "mefiance",
   "private": true,
   "version": "1.0.0",
-  "description": "Détecteur local de textes et fichiers générés par IA (métadonnées, artefacts, caractères cachés, style).",
+  "description": "MefIAnce : savoir si un texte ou un fichier vient d'une IA, et laquelle. Analyse 100 % locale (métadonnées, traces de copier-coller, caractères cachés, modèle de langage local, style).",
   "workspaces": [
     "server",
     "client"

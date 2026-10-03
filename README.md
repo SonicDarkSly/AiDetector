@@ -1,7 +1,8 @@
 # MefIAnce
 
-Application locale pour vérifier si un texte ou un fichier a été produit par une IA (ChatGPT, Claude,
-Gemini, Copilot, Perplexity, Mistral...). Aucun service externe : tout est analysé sur la machine.
+Application locale pour savoir si un texte ou un fichier vient d'une IA (ChatGPT, Claude, Gemini, Copilot,
+DeepSeek, Grok, Perplexity, Vibe de Mistral, Meta AI, Qwen...), et laquelle quand c'est possible.
+Tout est analysé sur la machine : aucun texte ni fichier n'est envoyé sur Internet.
 
 ## Lancement
 
@@ -11,9 +12,9 @@ Double-clic sur le lanceur de votre système :
 - Windows : `Lancer-MefIAnce-Windows.bat`
 - Linux : `Lancer-MefIAnce-Linux.sh`
 
-Au premier lancement, Node.js, les dépendances et le modèle d'analyse sont installés automatiquement. L'application s'ouvre sur
-http://localhost:5174 et reste accessible depuis les autres appareils du réseau local (adresse affichée
-dans la fenêtre du lanceur).
+Au premier lancement, Node.js, les dépendances et le modèle d'analyse (environ 1 Go) sont installés
+automatiquement. L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres
+appareils du réseau local (adresse affichée dans la fenêtre du lanceur).
 
 En ligne de commande :
 
@@ -22,38 +23,92 @@ npm install
 npm run dev
 ```
 
-## Ce qui est analysé
+Formats acceptés : texte collé, PDF, Word (.docx), TXT, Markdown, code source (25 Mo au maximum).
 
-Formats acceptés : texte collé, PDF, Word (.docx), TXT, Markdown, code source.
+## Méthode
 
-- **Métadonnées** : outil producteur des PDF (ReportLab, WeasyPrint...), XMP, Content Credentials (C2PA),
-  champ IPTC « trainedAlgorithmicMedia », créateur des .docx (`python-docx`, `docx`), temps d'édition,
-  sessions Word.
-- **Traces de copier-coller** : marqueurs internes de ChatGPT (`oaicite`, `turn0search`...) et de Gemini
-  (`[cite_start]`), liens `utm_source=chatgpt.com`, formules d'introduction et de conclusion de chatbot,
-  champs `[Votre nom]`, Markdown brut.
-- **Caractères cachés** : espaces de largeur nulle, caractères Unicode privés ou « tags », homoglyphes.
-- **Code** : placeholders, commentaires « Step 1 », émojis dans les logs.
-- **Modèle de langage** : un petit modèle local (Qwen2.5 1,5B, GGUF, node-llama-cpp) mesure la
-  prévisibilité du texte, token par token (méthode Fast-DetectGPT). Il ne génère rien. Téléchargé une seule
-  fois par le lanceur dans `server/data/llm` (environ 1 Go). `MEFIANCE_MODEL=off` désactive la mesure.
-- **Style et rythme** : vocabulaire sur-représenté, tournures récurrentes, régularité des phrases.
+Trois familles d'indices, notées séparément pour rester honnête sur ce qu'on peut affirmer.
 
-Le résultat sépare les preuves techniques des indices de style. Sans trace technique, un texte court est
-déclaré indéterminable : un texte d'IA copié proprement et retouché ne laisse pas toujours de trace.
+### Preuves techniques
+
+Fiables quand elles existent, mais faciles à effacer.
+
+- **Métadonnées** : outil créateur et producteur des PDF (ReportLab, WeasyPrint, Chrome sans interface...),
+  XMP, Content Credentials (C2PA), champ IPTC `trainedAlgorithmicMedia`, auteur des .docx (`python-docx`,
+  `Un-named` de la bibliothèque docx), temps d'édition, sessions Word (rsid), horloge en UTC.
+- **Traces de copier-coller**, propres à chaque assistant :
+
+  | Assistant | Marqueurs reconnus                                                                                             |
+  | --------- | -------------------------------------------------------------------------------------------------------------- |
+  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, caractères privés U+E200 |
+  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                    |
+  | Claude    | balises internes (`antArtifact`, `cite index`)                                                                 |
+  | DeepSeek  | `<think>`, `[citation:n]`                                                                                      |
+  | Copilot   | `[^n^]`                                                                                                        |
+  | Grok      | `<grok:render>`                                                                                                |
+  | Tous      | liens de partage, phrases d'introduction ou de conclusion de chatbot, `[Votre nom]`, Markdown brut             |
+
+- **Caractères cachés** : espaces de largeur nulle, message caché en caractères « tags » Unicode (décodé),
+  lettres cyrilliques déguisées en lettres latines.
+
+Les marqueurs de trois assistants ou plus dans un même texte indiquent un document qui en parle (article,
+guide) : ils ne comptent alors que comme de faibles indices.
+
+### Prévisibilité du texte
+
+Un petit modèle local (Qwen2.5 1,5B Instruct, Q4_K_M, GGUF via node-llama-cpp) mesure la probabilité de
+chaque mot. Il ne génère rien. Le score combine la log-probabilité moyenne et la longueur, calibré sur 394
+textes en français (46 générés par IA, 348 écrits par des humains avant 2022) :
+
+| Longueur (tokens) | Textes IA détectés | Textes humains signalés à tort |
+| ----------------- | ------------------ | ------------------------------ |
+| 30                | 89 %               | 19 %                           |
+| 50                | 96 %               | 14 %                           |
+| 80                | 100 %              | 10 %                           |
+| 120               | 96 %               | 7 %                            |
+| 200               | 86 %               | 2 %                            |
+
+Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Un résultat
+« peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
+familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 5 minutes sans analyse.
+
+### Style et rythme
+
+Vocabulaire sur-représenté, tournures récurrentes, tirets longs, régularité des phrases. Tendances
+seulement : le style seul ne dépasse pas environ 60 %.
+
+## Lire le résultat
+
+- **Verdict** : score global, preuves techniques, prévisibilité du texte, style. Sans trace exploitable sur un
+  texte court, le verdict est « indéterminable », avec une tendance indicative.
+- **Quel outil ?** : logiciels identifiés dans les métadonnées, et part de chaque assistant. L'outil déclaré
+  par le fichier (métadonnées, C2PA) prime sur les marqueurs du texte. Sans trace propre, l'assistant est
+  « non identifiable » : aucun outil ne peut honnêtement dire lequel a écrit un texte copié proprement.
+- **Indices détectés**, **Métadonnées**, **Statistiques**, **Texte analysé** (passages surlignés et libellés,
+  caractères invisibles, version nettoyée à copier).
+
+## Limites
+
+- Absence de trace ne veut pas dire humain : un texte d'IA retouché ou reformulé peut passer inaperçu.
+- Un humain au style très scolaire peut obtenir un score élevé. Ne jamais accuser quelqu'un sur un score.
+- Les métadonnées disparaissent quand on ré-enregistre, imprime ou capture le fichier.
+- Les filigranes invisibles (SynthID de Google) ne sont lisibles que par leur éditeur.
 
 ## Architecture
 
 Monorepo npm (`server`, `client`).
 
-- `server` : NestJS, découpage DDD / CQRS (`@nestjs/cqrs`)
-  - `detection/domain` : agrégat `Analysis`, détecteurs de signaux, politique de verdict, événements
+- `server` : NestJS 11, découpage DDD / CQRS (`@nestjs/cqrs`)
+  - `detection/domain` : agrégat `Analysis`, détecteurs de signaux, politiques de verdict et d'attribution
   - `detection/application` : commandes, requêtes, gestionnaires d'événements
-  - `detection/infrastructure` : lecture PDF / DOCX / texte, mesure par modèle, historique sur disque
+  - `detection/infrastructure` : lecture PDF (pdfjs-dist) / DOCX / texte, mesure par modèle, historique
   - `detection/presentation` : API HTTP
-- `client` : React, Vite, Ant Design
+- `client` : React 18, Vite 6, Ant Design 5
 
-API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/reports`, `GET /api/reports/:id`,
-`DELETE /api/reports/:id`, `DELETE /api/reports`, `GET /api/health`.
+API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET /api/reports`,
+`GET /api/reports/:id`, `DELETE /api/reports/:id`, `DELETE /api/reports`, `GET /api/health`.
 
 Les analyses sont conservées dans `server/data/reports` (200 au maximum).
+
+Variable d'environnement : `MEFIANCE_MODEL=off` désactive le modèle, `MEFIANCE_MODEL=<uri ou chemin>`
+en impose un autre.
