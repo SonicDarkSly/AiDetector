@@ -339,7 +339,7 @@ export class MetadataDetector implements SignalDetector {
         points: 2,
       });
     }
-    // le bac à sable Linux résume déjà « fabriqué par un programme » et « horloge en UTC »
+    // meta-headless-sandbox couvre déjà le générateur et l'horloge UTC
     if (out.some((x) => x.id === 'meta-headless-sandbox'))
       return out.filter((x) => (x.id !== 'meta-pdf-generator' || x.points > 5) && x.id !== 'meta-pdf-utc');
     return out;

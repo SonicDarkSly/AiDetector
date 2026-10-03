@@ -1,11 +1,11 @@
 import { useState, type ReactNode } from 'react';
-import { Alert, Button, Col, Flex, Row, Segmented, Tooltip, Typography } from 'antd';
+import { Alert, Button, Flex, Segmented, Tooltip, Typography } from 'antd';
 import {
+  AppstoreOutlined,
   BarsOutlined,
   CheckOutlined,
   DragOutlined,
   HolderOutlined,
-  LayoutOutlined,
   ProfileOutlined,
   UndoOutlined,
 } from '@ant-design/icons';
@@ -14,10 +14,12 @@ import {
   KeyboardSensor,
   PointerSensor,
   TouchSensor,
-  closestCorners,
+  pointerWithin,
+  rectIntersection,
   useDroppable,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type DragOverEvent,
 } from '@dnd-kit/core';
@@ -41,25 +43,26 @@ const { Title, Text } = Typography;
 
 export type ReportLayout = 'columns' | 'list' | 'summary';
 type BlockId = 'verdict' | 'origins' | 'signals' | 'metadata' | 'stats' | 'text';
-type Zone = 'top' | 'left' | 'right' | 'full' | 'main';
-
-const ZONES: Zone[] = ['top', 'left', 'right', 'full', 'main'];
-type Arrangement = Partial<Record<Zone, BlockId[]>>;
+interface Cell {
+  id: string;
+  blocks: BlockId[];
+}
+interface GridRow {
+  id: string;
+  cells: Cell[];
+}
 
 const STORAGE_KEY = 'mefiance-layout';
-const ARRANGEMENT_KEY = 'mefiance-arrangement';
+const GRID_KEY = 'mefiance-grid';
+const MAX_CELLS = 3;
+const NEW_ROW = 'new-row:';
+const NEW_CELL = 'new-cell:';
 
 const LAYOUTS: { value: ReportLayout; label: string; icon: ReactNode }[] = [
-  { value: 'columns', label: 'Deux colonnes', icon: <LayoutOutlined /> },
+  { value: 'columns', label: 'Grille : lignes et colonnes', icon: <AppstoreOutlined /> },
   { value: 'list', label: 'Une colonne, dans l’ordre de lecture', icon: <BarsOutlined /> },
   { value: 'summary', label: 'Résumé : verdict, outils et indices principaux', icon: <ProfileOutlined /> },
 ];
-
-const DEFAULTS: Record<ReportLayout, Arrangement> = {
-  columns: { top: [], left: ['verdict', 'origins', 'stats'], right: ['signals', 'metadata'], full: ['text'] },
-  list: { main: ['verdict', 'origins', 'signals', 'metadata', 'stats', 'text'] },
-  summary: { top: [], left: ['verdict', 'origins'], right: ['signals'], full: [] },
-};
 
 const BLOCK_LABELS: Record<BlockId, string> = {
   verdict: 'Verdict',
@@ -70,12 +73,16 @@ const BLOCK_LABELS: Record<BlockId, string> = {
   text: 'Texte analysé',
 };
 
-const ZONE_LABELS: Record<Zone, string> = {
-  top: 'Pleine largeur, en haut',
-  left: 'Colonne gauche',
-  right: 'Colonne droite',
-  full: 'Pleine largeur, en bas',
-  main: 'Ordre des blocs',
+const uid = () => Math.random().toString(36).slice(2, 10);
+const row = (...cells: BlockId[][]): GridRow => ({
+  id: `r-${uid()}`,
+  cells: cells.map((blocks) => ({ id: `c-${uid()}`, blocks })),
+});
+
+const DEFAULTS: Record<ReportLayout, () => GridRow[]> = {
+  columns: () => [row(['verdict', 'origins', 'stats'], ['signals', 'metadata']), row(['text'])],
+  list: () => [row(['verdict', 'origins', 'signals', 'metadata', 'stats', 'text'])],
+  summary: () => [row(['verdict', 'origins'], ['signals'])],
 };
 
 function savedLayout(): ReportLayout {
@@ -83,80 +90,110 @@ function savedLayout(): ReportLayout {
   return LAYOUTS.some((l) => l.value === saved) ? (saved as ReportLayout) : 'columns';
 }
 
-function savedArrangement(layout: ReportLayout): Arrangement {
-  const fallback = DEFAULTS[layout];
+const blocksOf = (grid: GridRow[]) => grid.flatMap((r) => r.cells.flatMap((c) => c.blocks));
+
+function savedGrid(layout: ReportLayout): GridRow[] {
+  const fallback = DEFAULTS[layout]();
   try {
-    const raw = localStorage.getItem(`${ARRANGEMENT_KEY}-${layout}`);
-    const parsed = raw ? (JSON.parse(raw) as Arrangement) : null;
-    if (!parsed) return fallback;
-    const zones = Object.keys(fallback) as Zone[];
-    const expected = zones.flatMap((z) => fallback[z] ?? []).sort();
-    const found = zones.flatMap((z) => parsed[z] ?? []).sort();
-    return JSON.stringify(expected) === JSON.stringify(found) ? { ...fallback, ...parsed } : fallback;
+    const raw = localStorage.getItem(`${GRID_KEY}-${layout}`);
+    const parsed = raw ? (JSON.parse(raw) as GridRow[]) : null;
+    if (!Array.isArray(parsed)) return fallback;
+    const same = JSON.stringify(blocksOf(parsed).sort()) === JSON.stringify(blocksOf(fallback).sort());
+    const valid = parsed.every((r) => r.cells.length >= 1 && r.cells.length <= MAX_CELLS);
+    return same && valid ? parsed : fallback;
   } catch {
     return fallback;
   }
 }
 
-function zoneOf(arrangement: Arrangement, id: string): Zone | null {
-  if (ZONES.includes(id as Zone)) return id as Zone;
-  return (Object.keys(arrangement) as Zone[]).find((z) => arrangement[z]?.includes(id as BlockId)) ?? null;
+function cleanup(grid: GridRow[]): GridRow[] {
+  return grid
+    .map((r) => ({ ...r, cells: r.cells.filter((c) => c.blocks.length > 0) }))
+    .filter((r) => r.cells.length > 0);
 }
+
+function cellOf(grid: GridRow[], id: string): Cell | null {
+  for (const r of grid)
+    for (const c of r.cells) if (c.id === id || c.blocks.includes(id as BlockId)) return c;
+  return null;
+}
+
+function withoutBlock(grid: GridRow[], block: BlockId): GridRow[] {
+  return grid.map((r) => ({
+    ...r,
+    cells: r.cells.map((c) => ({ ...c, blocks: c.blocks.filter((b) => b !== block) })),
+  }));
+}
+
+const collision: CollisionDetection = (args) => {
+  const hits = pointerWithin(args);
+  return hits.length > 0 ? hits : rectIntersection(args);
+};
 
 function SortableBlock({ id, editing, children }: { id: BlockId; editing: boolean; children: ReactNode }) {
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
     useSortable({ id, disabled: !editing });
-  if (children === null) return null;
+  if (children === null && !editing) return null;
   return (
     <div
       ref={setNodeRef}
       className={`report-block${editing ? ' editing' : ''}${isDragging ? ' dragging' : ''}`}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
+      style={{ transform: CSS.Translate.toString(transform), transition }}
     >
       {editing && (
         <div className="report-block-handle" ref={setActivatorNodeRef} {...attributes} {...listeners}>
           <HolderOutlined /> {BLOCK_LABELS[id]}
         </div>
       )}
-      <div className={editing ? 'report-block-body' : undefined}>{children}</div>
+      {children === null ? (
+        <div className="report-block-hidden">Masqué pour ce type d’analyse</div>
+      ) : (
+        <div className={editing ? 'report-block-body' : 'report-block-content'}>{children}</div>
+      )}
     </div>
   );
 }
 
-function DropZone({
-  zone,
-  ids,
+function CellZone({
+  cell,
   editing,
   render,
 }: {
-  zone: Zone;
-  ids: BlockId[];
+  cell: Cell;
   editing: boolean;
-  render: (id: BlockId, zone: Zone) => ReactNode;
+  render: (id: BlockId) => ReactNode;
 }) {
-  const { setNodeRef, isOver } = useDroppable({ id: zone, disabled: !editing });
-  if (!editing && ids.length === 0) return null;
+  const { setNodeRef, isOver } = useDroppable({ id: cell.id, disabled: !editing });
+  if (!editing && cell.blocks.every((id) => render(id) === null)) return null;
   return (
-    <SortableContext id={zone} items={ids} strategy={verticalListSortingStrategy}>
-      <div ref={setNodeRef} className={`report-zone${editing ? ' editing' : ''}${isOver ? ' over' : ''}`}>
-        {editing && <Text className="report-zone-label">{ZONE_LABELS[zone]}</Text>}
-        <Flex vertical gap={16}>
-          {ids.map((id) => (
+    <SortableContext id={cell.id} items={cell.blocks} strategy={verticalListSortingStrategy}>
+      <div ref={setNodeRef} className={`report-cell${editing ? ' editing' : ''}${isOver ? ' over' : ''}`}>
+        <Flex vertical gap={16} className="report-cell-stack">
+          {cell.blocks.map((id) => (
             <SortableBlock key={id} id={id} editing={editing}>
-              {render(id, zone)}
+              {render(id)}
             </SortableBlock>
           ))}
-          {editing && ids.length === 0 && <div className="report-zone-empty">Déposez un bloc ici</div>}
         </Flex>
       </div>
     </SortableContext>
   );
 }
 
+function NewTarget({ id, label, vertical = false }: { id: string; label: string; vertical?: boolean }) {
+  const { setNodeRef, isOver } = useDroppable({ id });
+  return (
+    <div ref={setNodeRef} className={`report-new${vertical ? ' vertical' : ''}${isOver ? ' over' : ''}`}>
+      <span>{label}</span>
+    </div>
+  );
+}
+
 export function ReportView({ report }: { report: AnalysisReport }) {
   const [layout, setLayout] = useState<ReportLayout>(savedLayout);
-  const [arrangement, setArrangement] = useState<Arrangement>(() => savedArrangement(savedLayout()));
+  const [grid, setGrid] = useState<GridRow[]>(() => savedGrid(savedLayout()));
   const [editing, setEditing] = useState(false);
+  const freeLayout = layout !== 'list';
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -166,40 +203,72 @@ export function ReportView({ report }: { report: AnalysisReport }) {
 
   const changeLayout = (value: ReportLayout) => {
     setLayout(value);
-    setArrangement(savedArrangement(value));
+    setGrid(savedGrid(value));
     localStorage.setItem(STORAGE_KEY, value);
   };
 
-  const save = (next: Arrangement) => {
-    setArrangement(next);
-    localStorage.setItem(`${ARRANGEMENT_KEY}-${layout}`, JSON.stringify(next));
+  const save = (next: GridRow[]) => {
+    setGrid(next);
+    localStorage.setItem(`${GRID_KEY}-${layout}`, JSON.stringify(next));
   };
 
   const onDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
-    const from = zoneOf(arrangement, String(active.id));
-    const to = zoneOf(arrangement, String(over.id));
-    if (!from || !to || from === to) return;
-    const source = (arrangement[from] ?? []).filter((id) => id !== active.id);
-    const target = [...(arrangement[to] ?? [])];
-    const at = target.indexOf(over.id as BlockId);
-    target.splice(at < 0 ? target.length : at, 0, active.id as BlockId);
-    save({ ...arrangement, [from]: source, [to]: target });
+    const overId = String(over.id);
+    if (overId.startsWith(NEW_ROW) || overId.startsWith(NEW_CELL)) return;
+    const from = cellOf(grid, String(active.id));
+    const to = cellOf(grid, overId);
+    if (!from || !to || from.id === to.id) return;
+    const block = active.id as BlockId;
+    const target = to.blocks.filter((b) => b !== block);
+    const at = target.indexOf(overId as BlockId);
+    target.splice(at < 0 ? target.length : at, 0, block);
+    setGrid(
+      withoutBlock(grid, block).map((r) => ({
+        ...r,
+        cells: r.cells.map((c) => (c.id === to.id ? { ...c, blocks: target } : c)),
+      })),
+    );
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over) return;
-    const zone = zoneOf(arrangement, String(active.id));
-    if (!zone || zone !== zoneOf(arrangement, String(over.id))) return;
-    const ids = arrangement[zone] ?? [];
-    const from = ids.indexOf(active.id as BlockId);
-    const to = ids.indexOf(over.id as BlockId);
-    if (from >= 0 && to >= 0 && from !== to) save({ ...arrangement, [zone]: arrayMove(ids, from, to) });
+    const block = active.id as BlockId;
+    if (!over) return save(cleanup(grid));
+    const overId = String(over.id);
+    if (overId.startsWith(NEW_ROW)) {
+      const index = Number(overId.slice(NEW_ROW.length));
+      const next = withoutBlock(grid, block);
+      next.splice(index, 0, row([block]));
+      return save(cleanup(next));
+    }
+    if (overId.startsWith(NEW_CELL)) {
+      const rowId = overId.slice(NEW_CELL.length);
+      const next = withoutBlock(grid, block).map((r) =>
+        r.id === rowId ? { ...r, cells: [...r.cells, { id: `c-${uid()}`, blocks: [block] }] } : r,
+      );
+      return save(cleanup(next));
+    }
+    const cell = cellOf(grid, block);
+    if (cell && cell.id === cellOf(grid, overId)?.id) {
+      const from = cell.blocks.indexOf(block);
+      const to = cell.blocks.indexOf(overId as BlockId);
+      if (from >= 0 && to >= 0 && from !== to) {
+        const moved = arrayMove(cell.blocks, from, to);
+        return save(
+          cleanup(
+            grid.map((r) => ({
+              ...r,
+              cells: r.cells.map((c) => (c.id === cell.id ? { ...c, blocks: moved } : c)),
+            })),
+          ),
+        );
+      }
+    }
+    save(cleanup(grid));
   };
 
   const summary = layout === 'summary';
-  const render = (id: BlockId, zone: Zone): ReactNode => {
-    const narrow = zone === 'left' || zone === 'right';
+  const render = (id: BlockId, narrow: boolean): ReactNode => {
     switch (id) {
       case 'verdict':
         return <VerdictCard report={report} />;
@@ -218,10 +287,8 @@ export function ReportView({ report }: { report: AnalysisReport }) {
     }
   };
 
-  const zone = (z: Zone) => (
-    <DropZone zone={z} ids={arrangement[z] ?? []} editing={editing} render={render} />
-  );
   const warnings = report.metadata.filter((m) => m.key === 'Avertissement').map((m) => m.value);
+  const showNew = editing && freeLayout;
 
   return (
     <div id="report">
@@ -241,7 +308,7 @@ export function ReportView({ report }: { report: AnalysisReport }) {
         </Title>
         <Flex gap={8} align="center" wrap>
           {editing && (
-            <Button size="small" icon={<UndoOutlined />} onClick={() => save(DEFAULTS[layout])}>
+            <Button size="small" icon={<UndoOutlined />} onClick={() => save(DEFAULTS[layout]())}>
               Disposition d'origine
             </Button>
           )}
@@ -249,9 +316,9 @@ export function ReportView({ report }: { report: AnalysisReport }) {
             title={
               editing
                 ? undefined
-                : layout === 'list'
-                  ? 'Réordonner les blocs'
-                  : 'Déplacer les blocs entre les colonnes et la pleine largeur'
+                : freeLayout
+                  ? 'Placer les blocs en lignes et colonnes'
+                  : 'Réordonner les blocs'
             }
           >
             <Button
@@ -275,32 +342,39 @@ export function ReportView({ report }: { report: AnalysisReport }) {
       </Flex>
       {editing && (
         <Text type="secondary" style={{ display: 'block', fontSize: 12, marginBottom: 10 }}>
-          {layout === 'list'
-            ? 'Faites glisser un bloc par sa poignée pour changer l’ordre.'
-            : 'Faites glisser un bloc par sa poignée : pleine largeur en haut, colonne gauche, colonne droite ou pleine largeur en bas.'}
+          {freeLayout
+            ? 'Faites glisser un bloc par sa poignée : dans une case, à côté d’un autre bloc (jusqu’à 3 par ligne), ou sur une barre « Nouvelle ligne » pour lui donner toute la largeur.'
+            : 'Faites glisser un bloc par sa poignée pour changer l’ordre.'}
         </Text>
       )}
 
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={collision}
         onDragOver={onDragOver}
         onDragEnd={onDragEnd}
       >
-        {layout === 'list' ? (
-          zone('main')
-        ) : (
-          <Row gutter={[16, 16]}>
-            {(editing || (arrangement.top ?? []).length > 0) && <Col span={24}>{zone('top')}</Col>}
-            <Col xs={24} lg={summary ? 12 : 10}>
-              {zone('left')}
-            </Col>
-            <Col xs={24} lg={summary ? 12 : 14}>
-              {zone('right')}
-            </Col>
-            {(editing || (arrangement.full ?? []).length > 0) && <Col span={24}>{zone('full')}</Col>}
-          </Row>
-        )}
+        <Flex vertical gap={16}>
+          {showNew && <NewTarget id={`${NEW_ROW}0`} label="Nouvelle ligne" />}
+          {grid.map((r, i) => (
+            <Flex vertical gap={16} key={r.id}>
+              <div className={`report-row${editing ? ' editing' : ''}`}>
+                {r.cells.map((cell) => (
+                  <CellZone
+                    key={cell.id}
+                    cell={cell}
+                    editing={editing}
+                    render={(id) => render(id, r.cells.length > 1)}
+                  />
+                ))}
+                {showNew && r.cells.length < MAX_CELLS && (
+                  <NewTarget id={`${NEW_CELL}${r.id}`} label="Nouvelle colonne" vertical />
+                )}
+              </div>
+              {showNew && <NewTarget id={`${NEW_ROW}${i + 1}`} label="Nouvelle ligne" />}
+            </Flex>
+          ))}
+        </Flex>
       </DndContext>
     </div>
   );

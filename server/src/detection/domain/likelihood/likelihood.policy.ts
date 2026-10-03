@@ -34,8 +34,7 @@ const pct = (x: number) => `${Math.round(x * 100)} %`;
 export function likelihoodSignal(m: LikelihoodMeasure, technical = false): Signal {
   const p = aiProbability(m);
   const r = reliability(m.tokens);
-  // Côté « humain », la mesure n'est qu'un indice : un texte d'IA retouché, très technique ou
-  // demandé dans un style familier sort aussi peu prévisible.
+  // côté humain ce n'est qu'un indice : IA retouchée, texte technique ou familier sortent pareil
   const points = Math.max(technical ? -TECHNICAL_HUMAN_CAP : -HUMAN_CAP, Math.round(11 * r * aiLogit(m)));
   const ref = measuredAt(m.tokens);
   const evidence = [

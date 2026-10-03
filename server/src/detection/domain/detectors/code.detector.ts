@@ -31,11 +31,10 @@ const HASH_COMMENT_EXTENSIONS = new Set([
   'ps1',
   'conf',
 ]);
-// Tirets longs, flèches, guillemets français, points de suspension : impossibles à taper directement
-// au clavier, fréquents dans les commentaires écrits par un assistant, quasi absents du code humain.
+// caractères qu'on ne tape pas au clavier dans un éditeur de code
 const TYPOGRAPHY =
   /[\u2014\u2013\u2192\u2190\u21d2\u2260\u2248\u2264\u2265\u2026\u00ab\u00bb\u201c\u201d\u2019]/g;
-// En-tête de fichier en capitales suivi d'un tiret long : « SERVICE DE DOMAINE — Classification… »
+// en-tête du type ROLE + tiret long + description
 const BANNER =
   /^\s*(?:\/\*\*?|\/\/|#)?\s*\*?\s*(?!TODO|FIXME|NOTE|HACK|XXX|WARNING|IMPORTANT)[A-ZÀ-Ý][A-ZÀ-Ý0-9'/]{2,}(?: [A-ZÀ-Ý0-9'/]+)*\s*[\u2014\u2013]\s+\S[^\n]*/m;
 

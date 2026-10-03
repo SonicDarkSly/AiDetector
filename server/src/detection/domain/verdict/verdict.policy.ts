@@ -38,11 +38,9 @@ export function evaluate(
 ): Verdict {
   const tech = sum(signals.filter(isTechnical));
   const modelPoints = sum(signals.filter(isModel));
-  // Le style seul ne doit jamais suffire à affirmer une origine IA.
   const style = Math.min(MAX_STYLE_POINTS, sum(signals.filter(isStyle)));
 
-  // sans mesure du modèle, l'a priori est « plutôt humain » ; avec, la probabilité calibrée suffit
-  // le code n'est jamais mesuré par le modèle : un a priori plus neutre, sinon rien ne peut ressortir
+  // le code n'est jamais mesuré par le modèle, d'où un a priori plus neutre
   const prior = modelApplicable ? -2 * (1 - (model?.reliability ?? 0)) : -1;
   const z = (tech + 0.6 * style + modelPoints) / 11 + prior;
   const score = Math.min(99, Math.max(1, Math.round(100 / (1 + Math.exp(-z)))));
@@ -54,7 +52,7 @@ export function evaluate(
   const anyIa = iaSignals.some((s) => s.points > 0);
   const modelReliable = model !== null && model.reliability >= 0.5;
 
-  // Ne rien trouver ne veut pas dire « humain » : sur un texte court et propre, on ne conclut pas.
+  // rien trouvé ne veut pas dire humain : texte court sans trace = indéterminable
   const undetermined =
     !strongTech &&
     !mediumTech &&
@@ -146,7 +144,7 @@ function attribute(signals: Signal[]): VendorScore[] {
     for (const h of s.vendors) {
       const e = acc.get(h.vendor) ?? { sum: 0, trace: false, reasons: [] };
       e.sum += h.weight * STRENGTH_FACTOR[s.strength];
-      // une « trace » = un marqueur propre à cette IA, pas un outil qu'elle partage avec d'autres
+      // trace = marqueur propre à cette IA, pas un outil partagé
       if (h.weight >= 2 && (s.strength === 'fort' || s.strength === 'moyen')) e.trace = true;
       if (!e.reasons.includes(s.label)) e.reasons.push(s.label);
       acc.set(h.vendor, e);

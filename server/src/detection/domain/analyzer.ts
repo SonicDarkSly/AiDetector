@@ -10,7 +10,7 @@ import { evaluate, type ModelEstimate } from './verdict/verdict.policy.js';
 import { evaluateOrigins } from './origin/origin.policy.js';
 import { identifySoftware } from './origin/software.js';
 
-// sous ce taux de prose (code, tableaux, sommaire), un document sort du domaine de calibration
+// en dessous, document technique hors du domaine de calibration
 const TECHNICAL_PROSE_RATIO = 0.75;
 
 const MAX_ANALYZED_CHARS = 400_000;

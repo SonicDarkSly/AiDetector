@@ -253,9 +253,33 @@ body {
   }
 }
 
-.report-zone.editing {
-  min-height: 90px;
-  padding: 10px;
+.report-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: stretch;
+}
+.report-cell {
+  flex: 1 1 0;
+  min-width: min(100%, 320px);
+  display: flex;
+  flex-direction: column;
+}
+.report-cell-stack {
+  flex: 1;
+}
+.report-cell:not(.editing) .report-block:last-child,
+.report-cell:not(.editing) .report-block:last-child > .report-block-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.report-cell:not(.editing) .report-block:last-child > .report-block-content > .ant-card {
+  flex: 1;
+}
+.report-cell.editing {
+  min-height: 80px;
+  padding: 8px;
   border-radius: 12px;
   border: 1.5px dashed rgba(124, 58, 237, 0.45);
   background: rgba(124, 58, 237, 0.04);
@@ -263,26 +287,41 @@ body {
     background 0.15s,
     border-color 0.15s;
 }
-.report-zone.editing.over {
+.report-cell.editing.over {
   border-color: #7c3aed;
   background: rgba(124, 58, 237, 0.1);
 }
-.report-zone-label {
-  display: block;
-  margin: -2px 0 8px 2px;
+.report-new {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  border-radius: 10px;
+  border: 1.5px dashed rgba(127, 127, 127, 0.45);
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #9254de !important;
+  color: rgba(127, 127, 127, 0.95);
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    color 0.15s;
 }
-.report-zone-empty {
-  padding: 22px;
-  border-radius: 10px;
-  text-align: center;
-  font-size: 12px;
-  color: rgba(127, 127, 127, 0.9);
-  border: 1px dashed rgba(127, 127, 127, 0.4);
+.report-new.vertical {
+  flex: 0 0 56px;
+  height: auto;
+  min-height: 120px;
+  align-self: stretch;
+}
+.report-new.vertical span {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+.report-new.over {
+  border-color: #7c3aed;
+  color: #9254de;
+  background: rgba(124, 58, 237, 0.12);
 }
 .report-block.editing {
   position: relative;
@@ -315,4 +354,13 @@ body {
   pointer-events: none;
   border-radius: 0 0 10px 10px;
   mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}
+
+.report-block-hidden {
+  padding: 10px 12px;
+  border-radius: 0 0 10px 10px;
+  font-size: 12px;
+  color: rgba(127, 127, 127, 0.95);
+  border: 1px dashed rgba(127, 127, 127, 0.4);
+  border-top: none;
 }

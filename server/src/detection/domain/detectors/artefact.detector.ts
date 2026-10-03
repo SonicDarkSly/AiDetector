@@ -242,8 +242,7 @@ const MARKDOWN_RE =
 
 const HEAD_CHARS = 300;
 
-// Un vrai copier-coller vient d'un assistant, rarement de deux. Les marqueurs de trois assistants ou
-// plus dans le même texte signent un document qui en parle (article, guide), pas une réponse collée.
+// marqueurs de 3 assistants ou plus : un document qui en parle, pas un copier-coller
 const SIGNATURE_RULES = new Set([
   'art-oaicite',
   'art-oai-brackets',

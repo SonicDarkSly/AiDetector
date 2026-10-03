@@ -94,9 +94,9 @@ seulement : le style seul ne dépasse pas environ 60 %.
   « non identifiable » : aucun outil ne peut honnêtement dire lequel a écrit un texte copié proprement.
 - **Indices détectés**, **Métadonnées**, **Statistiques**, **Texte analysé** (passages surlignés et libellés,
   caractères invisibles, version nettoyée à copier).
-- **Disposition** : deux colonnes, une colonne ou résumé. Le bouton « Organiser » permet de déplacer les
-  blocs par glisser-déposer (pleine largeur en haut ou en bas, colonne gauche ou droite), mémorisé pour
-  chaque mode.
+- **Disposition** : grille, une colonne ou résumé. Le bouton « Organiser » permet de placer les blocs par
+  glisser-déposer : jusqu'à trois côte à côte sur une ligne, empilés dans une case, ou seuls sur une ligne
+  pleine largeur. La disposition est mémorisée pour chaque mode.
 
 ## Limites
 

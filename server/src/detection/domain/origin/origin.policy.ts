@@ -16,10 +16,6 @@ const DECLARATIONS = new Set(['meta-ai-name', 'meta-c2pa']);
 const DECLARED_SHARE = 0.85;
 const STRENGTH_FACTOR: Record<Signal['strength'], number> = { fort: 3, moyen: 2, faible: 1, info: 0.5 };
 
-/**
- * Répartit la probabilité « IA » globale entre les assistants. Sans trace propre à l'un d'eux,
- * chacun reçoit la même part : on ne favorise pas l'assistant le plus répandu.
- */
 export function evaluateOrigins(
   signals: Signal[],
   software: SoftwareHint[],
@@ -39,16 +35,14 @@ export function evaluateOrigins(
     }
   }
 
-  // Plusieurs assistants tracés (texte qui cite des marqueurs de plusieurs IA) : partage au prorata
-  // des preuves, sans écraser les autres à 0 comme le ferait une exponentielle.
+  // plusieurs IA tracées : partage au prorata, une exponentielle écraserait les autres à 0
   const traced = AI_VENDORS.some((v) => evidence.get(v)?.trace);
   let weights = AI_VENDORS.map((v) => {
     const e = evidence.get(v);
     if (traced) return e?.trace ? e.sum : 0;
     return 1 + (e?.sum ?? 0);
   });
-  // L'outil déclaré par le fichier (métadonnées, C2PA) prime sur des marqueurs trouvés dans le texte,
-  // qui peuvent être cités ou recopiés d'ailleurs.
+  // l'outil déclaré par le fichier prime sur des marqueurs qui peuvent être cités dans le texte
   const declared = AI_VENDORS.map((v) => evidence.get(v)?.declared === true);
   if (declared.some(Boolean)) {
     const sumOf = (pick: boolean) => weights.reduce((a, w, i) => a + (declared[i] === pick ? w : 0), 0);

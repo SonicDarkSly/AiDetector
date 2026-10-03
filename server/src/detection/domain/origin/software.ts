@@ -90,17 +90,17 @@ export function identifySoftware(raw: Record<string, string>): SoftwareHint[] {
     else if (!prev.source.includes(hint.source)) prev.source += ` · ${hint.source}`;
   };
 
-  // python-docx part d'un vieux modèle Word : sa fiche « application » ne dit rien du vrai outil
+  // fiche application héritée du modèle de python-docx, sans rapport avec le vrai outil
   const fromTemplate = /python-docx/i.test(`${raw['docx.creator'] ?? ''} ${raw['docx.description'] ?? ''}`);
 
   for (const [key, label] of FIELDS) {
     const value = raw[key];
     if (!value || PLACEHOLDER.test(value)) continue;
     const isPerson = key === 'docx.creator' || key === 'docx.lastmodifiedby' || key === 'docx.description';
-    // un assistant IA déclaré ici est déjà compté parmi les assistants, pas comme logiciel
+    // déjà compté parmi les assistants
     if (vendorOf(value) && !KNOWN.some(([re]) => re.test(value))) continue;
     const { name, aiNote } = softwareName(value);
-    // créateur / modifié par d'un .docx : c'est normalement un nom de personne
+    // créateur / modifié par : en principe un nom de personne
     if (isPerson && !KNOWN.some(([re]) => re.test(value))) continue;
     if (key === 'docx.application' && fromTemplate) {
       add({

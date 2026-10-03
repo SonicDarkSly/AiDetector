@@ -101,11 +101,11 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             version nettoyée à copier quand quelque chose a été retiré.
           </li>
           <li>
-            Le bouton en haut à droite du rapport change la disposition : deux colonnes, une colonne, ou
-            résumé. « Organiser » permet de déplacer les blocs par glisser-déposer : colonne gauche, colonne
-            droite, ou pleine largeur en haut ou en bas (simplement l'ordre en mode une colonne). La
-            disposition est mémorisée pour chaque mode. Un bandeau « Analyse incomplète » signale un fichier
-            dont le texte n'a pas pu être lu.
+            Le bouton en haut à droite du rapport change la disposition : grille, une colonne, ou résumé. «
+            Organiser » permet de placer les blocs par glisser-déposer : jusqu'à trois côte à côte sur une
+            ligne, empilés dans une même case, ou seuls sur une nouvelle ligne pleine largeur (simplement
+            l'ordre en mode une colonne). La disposition est mémorisée pour chaque mode. Un bandeau « Analyse
+            incomplète » signale un fichier dont le texte n'a pas pu être lu.
           </li>
         </ul>
       </Paragraph>
