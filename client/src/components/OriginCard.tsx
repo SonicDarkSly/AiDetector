@@ -1,7 +1,7 @@
 import { Card, Flex, Progress, Tag, Tooltip, Typography } from 'antd';
 import { RobotOutlined, ToolOutlined } from '@ant-design/icons';
 import type { AnalysisReport, OriginScore } from '../types';
-import { VENDOR_COLORS } from '../constants';
+import { PRIMARY, VENDOR_COLORS } from '../constants';
 
 const { Text } = Typography;
 
@@ -58,24 +58,76 @@ function Row({ o }: { o: OriginScore }) {
   );
 }
 
+function Pooled({ items, total, title }: { items: OriginScore[]; total: number | null; title: string }) {
+  return (
+    <div className="origin-pool">
+      <Flex justify="space-between" align="center" gap={8}>
+        <Flex align="center" gap={6}>
+          <RobotOutlined style={{ color: PRIMARY }} />
+          <Text strong style={{ fontSize: 13 }}>
+            {title}
+          </Text>
+        </Flex>
+        <Text strong style={{ fontSize: 13, color: total ? PRIMARY : undefined }}>
+          {total === null ? '?' : `${total} %`}
+        </Text>
+      </Flex>
+      <Progress
+        percent={total ?? 0}
+        showInfo={false}
+        strokeColor={PRIMARY}
+        size="small"
+        style={{ margin: 0 }}
+      />
+      <Flex wrap gap={4} style={{ marginTop: 4 }}>
+        {items.map((o) => (
+          <Tag
+            key={o.id}
+            bordered={false}
+            style={{
+              marginInlineEnd: 0,
+              fontSize: 11,
+              color: o.vendor ? VENDOR_COLORS[o.vendor] : undefined,
+              background: o.vendor ? `${VENDOR_COLORS[o.vendor]}1f` : undefined,
+            }}
+          >
+            {o.label}
+          </Tag>
+        ))}
+      </Flex>
+    </div>
+  );
+}
+
 export function OriginCard({ report, compact = false }: { report: AnalysisReport; compact?: boolean }) {
   const all = originsOf(report);
-  const shown = compact ? all.filter((o) => (o.score ?? 0) > 0 || o.level === 'trace') : all;
-  const hidden = all.filter((o) => !shown.includes(o));
-  const origins = shown;
+  const tools = all.filter((o) => o.kind === 'logiciel');
   const ai = all.filter((o) => o.kind === 'ia');
+  const floor = Math.min(...ai.map((o) => o.score ?? 0));
+  const stands = (o: OriginScore) => o.level === 'trace' || (o.score ?? 0) > floor;
+  const identified = ai.filter(stands);
+  const others = ai.filter((o) => !stands(o));
   const anyTrace = ai.some((o) => o.level === 'trace');
   const undetermined = ai.every((o) => o.score === null);
+  const othersTotal = undetermined
+    ? null
+    : identified.length === 0
+      ? report.score
+      : others.reduce((a, o) => a + (o.score ?? 0), 0);
 
   let note: string;
   if (undetermined)
     note =
       'Probabilité IA indéterminable sur ce texte : la part de chaque assistant ne peut pas être estimée.';
+  else if (identified.length === 0)
+    note =
+      "Aucune trace propre à un assistant : impossible de dire lequel, le style des IA est trop proche. Le pourcentage est la probabilité IA globale, pas celle d'un outil précis.";
   else if (anyTrace)
     note = 'La probabilité IA est attribuée en priorité aux assistants dont une trace propre a été trouvée.';
-  else
-    note =
-      'Aucune trace propre à un assistant : la probabilité IA est répartie à parts égales, le style seul ne permettant pas de les distinguer.';
+  else note = 'Indices légers vers certains assistants, sans trace certaine.';
+
+  const shownTools = compact ? tools.filter((o) => (o.score ?? 0) > 0) : tools;
+  const shownIdentified = compact ? identified.filter((o) => (o.score ?? 0) > 0) : identified;
 
   return (
     <Card
@@ -91,14 +143,28 @@ export function OriginCard({ report, compact = false }: { report: AnalysisReport
           Logiciels : certitude d'après les métadonnées du fichier. Assistants IA : part de la probabilité IA
           globale. {note}
         </Text>
-        {origins.map((o) => (
+        {shownTools.map((o) => (
           <Row key={o.id} o={o} />
         ))}
-        {hidden.length > 0 && (
+        {shownIdentified.map((o) => (
+          <Row key={o.id} o={o} />
+        ))}
+        {others.length > 0 && othersTotal === 0 && identified.length > 0 && !compact && (
           <Text type="secondary" style={{ fontSize: 11 }}>
-            À 0 % : {hidden.map((o) => o.label).join(', ')}
+            Sans trace, à 0 % : {others.map((o) => o.label).join(', ')}
           </Text>
         )}
+        {others.length > 0 &&
+          !(othersTotal === 0 && identified.length > 0) &&
+          (!compact || (othersTotal ?? 0) > 0) && (
+            <Pooled
+              items={others}
+              total={othersTotal}
+              title={
+                identified.length === 0 ? 'Assistant IA non identifiable' : 'Autres assistants, sans trace'
+              }
+            />
+          )}
       </Flex>
     </Card>
   );
