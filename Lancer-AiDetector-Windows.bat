@@ -41,7 +41,7 @@ echo [1/4] Verification des dependances...
 if not exist node_modules\.bin\vite.cmd goto installdeps
 if not exist node_modules\.bin\tsc.cmd goto installdeps
 if not exist node_modules\mammoth goto installdeps
-if not exist node_modules\pdf-parse goto installdeps
+if not exist node_modules\pdfjs-dist goto installdeps
 if not exist node_modules\node-llama-cpp goto installdeps
 echo [OK] Dependances deja installees - node_modules complet.
 goto depsok

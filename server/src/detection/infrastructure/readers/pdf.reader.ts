@@ -1,4 +1,3 @@
-import pdfParse from 'pdf-parse/lib/pdf-parse.js';
 import type { MetaEntry, SourceDocument } from '../../domain/document/source-document.js';
 import { UnreadableDocumentError, type UploadedFile } from '../../domain/document/document-reader.js';
 import { attr, tag } from './xml.js';
@@ -53,6 +52,48 @@ export function formatPdfDate(d: string | undefined): string | undefined {
   return `${da}/${mo}/${y} ${h}:${mi}:${s} (${zone})`;
 }
 
+const MAX_PAGES = 200;
+
+// pdfjs-dist est un module ESM : import() natif malgré la compilation en CommonJS
+const esmImport = new Function('s', 'return import(s)') as (s: string) => Promise<any>;
+
+interface TextItem {
+  str?: string;
+  hasEOL?: boolean;
+}
+
+async function parseWithPdfjs(
+  buffer: Buffer,
+): Promise<{ text: string; info: Record<string, unknown>; pages: number }> {
+  const pdfjs = await esmImport('pdfjs-dist/legacy/build/pdf.mjs');
+  const doc = await pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    isEvalSupported: false,
+    disableFontFace: true,
+    useSystemFonts: false,
+    verbosity: 0,
+  }).promise;
+  try {
+    const parts: string[] = [];
+    for (let n = 1; n <= Math.min(doc.numPages, MAX_PAGES); n++) {
+      const page = await doc.getPage(n);
+      const content = await page.getTextContent();
+      parts.push(
+        (content.items as TextItem[]).map((it) => (it.str ?? '') + (it.hasEOL ? '\n' : '')).join(''),
+      );
+      page.cleanup();
+    }
+    const meta = await doc.getMetadata().catch(() => null);
+    return {
+      text: parts.join('\n\n'),
+      info: (meta?.info ?? {}) as Record<string, unknown>,
+      pages: doc.numPages,
+    };
+  } finally {
+    await doc.destroy();
+  }
+}
+
 export async function readPdf(file: UploadedFile): Promise<SourceDocument> {
   const latin1 = file.buffer.toString('latin1');
   let text = '';
@@ -60,10 +101,7 @@ export async function readPdf(file: UploadedFile): Promise<SourceDocument> {
   let pages: number | undefined;
   let parseError: string | undefined;
   try {
-    const data = await pdfParse(file.buffer);
-    text = data.text ?? '';
-    info = (data.info ?? {}) as Record<string, unknown>;
-    pages = data.numpages;
+    ({ text, info, pages } = await parseWithPdfjs(file.buffer));
   } catch (err) {
     parseError = err instanceof Error ? err.message : String(err);
   }
