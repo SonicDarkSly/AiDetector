@@ -188,6 +188,7 @@ const RULES: ArtefactRule[] = [
       "« [Votre nom] », « [Nom de l'entreprise] »… : gabarit typique des lettres et mails générés par IA, laissés tels quels.",
     strength: 'moyen',
     points: 15,
+    skipKinds: ['code'],
   },
   {
     id: 'art-utm',

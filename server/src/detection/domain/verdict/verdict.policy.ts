@@ -30,14 +30,20 @@ const isModel = (s: Signal) => s.category === 'model';
 const isStyle = (s: Signal) => !isTechnical(s) && !isModel(s);
 const sum = (xs: Signal[]) => xs.reduce((a, s) => a + s.points, 0);
 
-export function evaluate(signals: Signal[], stats: TextStats, model: ModelEstimate | null = null): Verdict {
+export function evaluate(
+  signals: Signal[],
+  stats: TextStats,
+  model: ModelEstimate | null = null,
+  modelApplicable = true,
+): Verdict {
   const tech = sum(signals.filter(isTechnical));
   const modelPoints = sum(signals.filter(isModel));
   // Le style seul ne doit jamais suffire à affirmer une origine IA.
   const style = Math.min(MAX_STYLE_POINTS, sum(signals.filter(isStyle)));
 
   // sans mesure du modèle, l'a priori est « plutôt humain » ; avec, la probabilité calibrée suffit
-  const prior = -2 * (1 - (model?.reliability ?? 0));
+  // le code n'est jamais mesuré par le modèle : un a priori plus neutre, sinon rien ne peut ressortir
+  const prior = modelApplicable ? -2 * (1 - (model?.reliability ?? 0)) : -1;
   const z = (tech + 0.6 * style + modelPoints) / 11 + prior;
   const score = Math.min(99, Math.max(1, Math.round(100 / (1 + Math.exp(-z)))));
 

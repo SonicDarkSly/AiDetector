@@ -91,7 +91,7 @@ export class Analyzer {
     }));
 
     const cleaned = cleanText(doc.text);
-    const verdict = evaluate(signals, stats, model);
+    const verdict = evaluate(signals, stats, model, doc.kind !== 'code');
     const software = doc.kind === 'pdf' || doc.kind === 'docx' ? identifySoftware(doc.raw) : [];
     return Analysis.complete(
       {

@@ -72,6 +72,14 @@ Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code 
 « peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
 familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 5 minutes sans analyse.
 
+### Code source
+
+Le modèle de langage ne mesure pas le code. Les indices viennent des commentaires : typographie de
+rédaction impossible à taper au clavier (tirets longs, flèches, guillemets « », points de suspension),
+en-têtes de fichier « RÔLE — description », phrases de chatbot, placeholders (`YOUR_API_KEY`,
+`# Example usage`), émojis dans les logs. Mesuré sur 70 fichiers écrits par Claude et 750 fichiers de
+bibliothèques open source : 54 fichiers IA sur 70 au-dessus de 50 %, aucun fichier humain.
+
 ### Style et rythme
 
 Vocabulaire sur-représenté, tournures récurrentes, tirets longs, régularité des phrases. Tendances

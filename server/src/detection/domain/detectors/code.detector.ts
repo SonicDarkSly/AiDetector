@@ -17,6 +17,35 @@ const NARRATION =
 const EMOJI_LOGS =
   /(?:print|console\.(?:log|error|warn|info)|echo|logger\.\w+|log\.\w+)\s*\(?\s*f?["'`][^"'`\n]*(?:[\u{1F300}-\u{1FAFF}]|✅|❌|⚠\uFE0F|✔|✓)/gu;
 
+const HASH_COMMENT_EXTENSIONS = new Set([
+  'py',
+  'sh',
+  'bash',
+  'zsh',
+  'rb',
+  'yml',
+  'yaml',
+  'toml',
+  'r',
+  'pl',
+  'ps1',
+  'conf',
+]);
+// Tirets longs, flèches, guillemets français, points de suspension : impossibles à taper directement
+// au clavier, fréquents dans les commentaires écrits par un assistant, quasi absents du code humain.
+const TYPOGRAPHY =
+  /[\u2014\u2013\u2192\u2190\u21d2\u2260\u2248\u2264\u2265\u2026\u00ab\u00bb\u201c\u201d\u2019]/g;
+// En-tête de fichier en capitales suivi d'un tiret long : « SERVICE DE DOMAINE — Classification… »
+const BANNER =
+  /^\s*(?:\/\*\*?|\/\/|#)?\s*\*?\s*(?!TODO|FIXME|NOTE|HACK|XXX|WARNING|IMPORTANT)[A-ZÀ-Ý][A-ZÀ-Ý0-9'/]{2,}(?: [A-ZÀ-Ý0-9'/]+)*\s*[\u2014\u2013]\s+\S[^\n]*/m;
+
+function commentRanges(text: string, extension: string | null): [number, number][] {
+  const re = HASH_COMMENT_EXTENSIONS.has(extension ?? '')
+    ? /(?:^|\s)#(?![!{])[^\n]*/gm
+    : /\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
+  return [...text.matchAll(re)].map((m) => [m.index ?? 0, (m.index ?? 0) + m[0].length]);
+}
+
 export class CodeDetector implements SignalDetector {
   readonly name = 'code';
 
@@ -71,23 +100,67 @@ export class CodeDetector implements SignalDetector {
       points: 8,
     });
 
-    const lines = text.split('\n').filter((l) => l.trim());
-    if (lines.length >= 30) {
-      const comments = lines.filter((l) => /^\s*(?:#(?!!)|\/\/|\/\*|\*|--|<!--)/.test(l)).length;
-      const ratio = comments / lines.length;
-      if (ratio > 0.35) {
-        signals.push({
-          id: 'code-comment-density',
-          category: 'code',
-          label: `Code très commenté (${Math.round(ratio * 100)} % des lignes)`,
-          detail:
-            'Les assistants commentent presque chaque bloc ; un code humain de production est rarement aussi annoté.',
-          strength: 'faible',
-          direction: 'ia',
-          points: 6,
-        });
+    const ranges = commentRanges(text, doc.extension);
+    const marks: Highlight[] = [];
+    const kinds = new Set<string>();
+    for (const [start, end] of ranges) {
+      for (const m of text.slice(start, end).matchAll(TYPOGRAPHY)) {
+        const at = start + (m.index ?? 0);
+        kinds.add(m[0]);
+        marks.push({ start: at, end: at + m[0].length, signalId: 'code-typography', level: 'moyen' });
       }
     }
+    if (marks.length >= 3 || kinds.size >= 2) {
+      const strong = marks.length >= 6 || kinds.size >= 3;
+      highlights.push(...marks.slice(0, 200));
+      signals.push({
+        id: 'code-typography',
+        category: 'code',
+        label: `Typographie de rédaction dans les commentaires (${[...kinds].join(' ')})`,
+        detail:
+          "Tirets longs, flèches, guillemets « » ou points de suspension typographiques : ces caractères ne se tapent pas au clavier dans un éditeur de code. Les assistants IA les écrivent naturellement dans leurs commentaires ; on n'en trouve presque jamais dans du code humain.",
+        strength: strong ? 'moyen' : 'faible',
+        direction: 'ia',
+        points: strong ? 22 : 12,
+        vendors: [
+          { vendor: 'chatgpt', weight: 1 },
+          { vendor: 'claude', weight: 1 },
+        ],
+        evidence: [
+          ...new Set(
+            marks.slice(0, 40).map((h) =>
+              text
+                .slice(Math.max(0, h.start - 30), h.end + 30)
+                .replace(/\s+/g, ' ')
+                .trim(),
+            ),
+          ),
+        ].slice(0, 3),
+        count: marks.length,
+      });
+    }
+
+    const banner = text.slice(0, 800).match(BANNER);
+    if (banner) {
+      const start = banner.index ?? 0;
+      highlights.push({ start, end: start + banner[0].length, signalId: 'code-banner', level: 'moyen' });
+      signals.push({
+        id: 'code-banner',
+        category: 'code',
+        label: 'En-tête de fichier « RÔLE — description »',
+        detail:
+          "Le fichier s'ouvre sur un intitulé en capitales suivi d'un tiret long (« SERVICE DE DOMAINE — … », « ADAPTER — … ») : présentation systématique des fichiers générés par un assistant, absente du code humain étudié.",
+        strength: 'moyen',
+        direction: 'ia',
+        points: 22,
+        vendors: [
+          { vendor: 'claude', weight: 1 },
+          { vendor: 'chatgpt', weight: 1 },
+        ],
+        evidence: [banner[0].trim().slice(0, 120)],
+      });
+    }
+
     return { signals, highlights };
   }
 }
