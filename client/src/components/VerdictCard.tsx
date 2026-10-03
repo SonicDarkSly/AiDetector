@@ -1,6 +1,6 @@
 import { Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import type { AnalysisReport, LanguageModelUsage } from '../types';
+import type { AnalysisReport } from '../types';
 import { KIND_LABELS, LANGUAGE_LABELS, scoreColor } from '../constants';
 import { formatDate, formatSize } from '../utils/format';
 
@@ -61,23 +61,20 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
                   percent={report.technicalScore}
                   strokeColor={scoreColor(report.technicalScore)}
                   size="small"
+                  format={(p) => `${p}%`}
                 />
               </div>
             </Tooltip>
-            {(report.modelScore != null || report.languageModel) && (
-              <Tooltip title="Probabilité estimée par un modèle de langage local à partir de la prévisibilité du texte. Peu fiable sous ~150 mots.">
+            {report.modelScore != null && (
+              <Tooltip title="Probabilité estimée par le modèle de langage local à partir de la prévisibilité du texte. Peu fiable sous ~150 mots.">
                 <div>
                   <Text style={{ fontSize: 12 }}>Modèle de langage</Text>
-                  {report.modelScore != null ? (
-                    <Progress
-                      percent={report.modelScore}
-                      strokeColor={scoreColor(report.modelScore)}
-                      size="small"
-                    />
-                  ) : (
-                    <Progress percent={0} size="small" format={() => '–'} />
-                  )}
-                  <ModelLine usage={report.languageModel} />
+                  <Progress
+                    percent={report.modelScore}
+                    strokeColor={scoreColor(report.modelScore)}
+                    size="small"
+                    format={(p) => `${p}%`}
+                  />
                 </div>
               </Tooltip>
             )}
@@ -88,6 +85,7 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
                   percent={report.styleScore}
                   strokeColor={scoreColor(report.styleScore)}
                   size="small"
+                  format={(p) => `${p}%`}
                 />
               </div>
             </Tooltip>
@@ -99,27 +97,5 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
         {LANGUAGE_LABELS[stats.language]}
       </Text>
     </Card>
-  );
-}
-
-const UNUSED: Record<string, string> = {
-  'too-short': 'texte trop court pour le modèle',
-  skipped: 'non utilisé pour ce type de contenu',
-  missing: 'pas encore téléchargé, relancez avec le lanceur',
-  disabled: 'désactivé (MEFIANCE_MODEL=off)',
-  error: 'chargement impossible, voir server/logs',
-};
-
-function ModelLine({ usage }: { usage?: LanguageModelUsage | null }) {
-  if (!usage) return null;
-  const name = usage.name ?? 'modèle local';
-  const detail =
-    usage.status === 'used'
-      ? `${usage.tokens} tokens en ${((usage.elapsedMs ?? 0) / 1000).toFixed(1).replace('.', ',')} s`
-      : (UNUSED[usage.status] ?? 'non utilisé');
-  return (
-    <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
-      Modèle : {usage.status === 'disabled' ? 'aucun' : name} · {detail}
-    </Text>
   );
 }
