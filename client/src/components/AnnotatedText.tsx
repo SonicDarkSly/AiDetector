@@ -49,8 +49,8 @@ function renderChunk(s: string, showInvisible: boolean, keyBase: string): ReactN
   return out;
 }
 
-export function AnnotatedText({ report, tall = false }: { report: AnalysisReport; tall?: boolean }) {
-  const boxClass = `annotated ${report.source.kind === 'code' ? 'code' : ''} ${tall ? 'tall' : ''}`;
+export function AnnotatedText({ report }: { report: AnalysisReport }) {
+  const boxClass = `annotated ${report.source.kind === 'code' ? 'code' : ''}`;
   const [showInvisible, setShowInvisible] = useState(true);
   const [showClean, setShowClean] = useState(false);
   const labels = useMemo(() => new Map(report.signals.map((s) => [s.id, s.label])), [report.signals]);

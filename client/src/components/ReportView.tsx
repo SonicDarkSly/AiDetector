@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Col, Flex, Row, Segmented, Tooltip, Typography } from 'antd';
-import { BarsOutlined, FileTextOutlined, LayoutOutlined, ProfileOutlined } from '@ant-design/icons';
+import { BarsOutlined, LayoutOutlined, ProfileOutlined } from '@ant-design/icons';
 import type { AnalysisReport } from '../types';
 import { VerdictCard } from './VerdictCard';
 import { OriginCard } from './OriginCard';
@@ -11,14 +11,13 @@ import { AnnotatedText } from './AnnotatedText';
 
 const { Title } = Typography;
 
-export type ReportLayout = 'columns' | 'list' | 'summary' | 'text';
+export type ReportLayout = 'columns' | 'list' | 'summary';
 
 const STORAGE_KEY = 'aidetector-layout';
 const LAYOUTS: { value: ReportLayout; label: string; icon: React.ReactNode }[] = [
   { value: 'columns', label: 'Deux colonnes', icon: <LayoutOutlined /> },
   { value: 'list', label: 'Une colonne, dans l’ordre de lecture', icon: <BarsOutlined /> },
   { value: 'summary', label: 'Résumé : verdict, outils et indices principaux', icon: <ProfileOutlined /> },
-  { value: 'text', label: 'Texte annoté en grand', icon: <FileTextOutlined /> },
 ];
 
 function savedLayout(): ReportLayout {
@@ -40,7 +39,7 @@ export function ReportView({ report }: { report: AnalysisReport }) {
   );
   const metadata = <MetadataTable metadata={report.metadata} kind={report.source.kind} />;
   const stats = report.source.kind !== 'code' ? <StatsCard stats={report.stats} /> : null;
-  const text = <AnnotatedText key={`text-${report.id}`} report={report} tall={layout === 'text'} />;
+  const text = <AnnotatedText key={`text-${report.id}`} report={report} />;
 
   return (
     <div id="report">
@@ -78,7 +77,7 @@ export function ReportView({ report }: { report: AnalysisReport }) {
       )}
 
       {layout === 'list' && (
-        <Flex vertical gap={16} style={{ maxWidth: 860, margin: '0 auto' }}>
+        <Flex vertical gap={16}>
           {verdict}
           {origins}
           {signals}
@@ -98,20 +97,6 @@ export function ReportView({ report }: { report: AnalysisReport }) {
           </Col>
           <Col xs={24} lg={12}>
             {signals}
-          </Col>
-        </Row>
-      )}
-
-      {layout === 'text' && (
-        <Row gutter={[16, 16]}>
-          <Col xs={24} lg={15}>
-            {text}
-          </Col>
-          <Col xs={24} lg={9}>
-            <Flex vertical gap={16}>
-              {verdict}
-              {signals}
-            </Flex>
           </Col>
         </Row>
       )}
