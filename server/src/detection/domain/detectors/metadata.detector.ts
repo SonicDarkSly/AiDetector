@@ -293,6 +293,26 @@ export class MetadataDetector implements SignalDetector {
       });
     }
 
+    const headless = /headlesschrome|puppeteer|playwright/i.test(raw['pdf.creator'] ?? '');
+    if (headless && /linux/i.test(raw['pdf.creator'] ?? '') && isUtcPdfDate(raw['pdf.creationdate'])) {
+      out.push({
+        id: 'meta-headless-sandbox',
+        category: 'metadata',
+        label: 'PDF imprimé par un navigateur automatisé sur un serveur Linux',
+        detail:
+          "Chrome sans interface, sous Linux, horloge en UTC : le PDF a été produit par un script sur un serveur, pas depuis un ordinateur personnel. C'est la méthode des assistants IA qui écrivent une page HTML puis l'impriment en PDF dans leur bac à sable (Claude, ChatGPT). Beaucoup de sites web génèrent aussi leurs PDF ainsi (factures, billets) : indice, pas preuve.",
+        strength: 'moyen',
+        direction: 'ia',
+        points: 14,
+        vendors: [
+          { vendor: 'script', weight: 2 },
+          { vendor: 'claude', weight: 1 },
+          { vendor: 'chatgpt', weight: 1 },
+        ],
+        evidence: [raw['pdf.creator'] ?? '', raw['pdf.creationdate'] ?? ''].filter(Boolean),
+      });
+    }
+
     if (isUtcPdfDate(raw['pdf.creationdate']) && !/microsoft|word|pages|quartz/i.test(tool)) {
       out.push({
         id: 'meta-pdf-utc',

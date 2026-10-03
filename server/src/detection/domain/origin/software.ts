@@ -1,3 +1,5 @@
+import { vendorOf } from '../signal/vendor.js';
+
 export interface SoftwareHint {
   name: string;
   confidence: number;
@@ -95,6 +97,8 @@ export function identifySoftware(raw: Record<string, string>): SoftwareHint[] {
     const value = raw[key];
     if (!value || PLACEHOLDER.test(value)) continue;
     const isPerson = key === 'docx.creator' || key === 'docx.lastmodifiedby' || key === 'docx.description';
+    // un assistant IA déclaré ici est déjà compté parmi les assistants, pas comme logiciel
+    if (vendorOf(value) && !KNOWN.some(([re]) => re.test(value))) continue;
     const { name, aiNote } = softwareName(value);
     // créateur / modifié par d'un .docx : c'est normalement un nom de personne
     if (isPerson && !KNOWN.some(([re]) => re.test(value))) continue;
