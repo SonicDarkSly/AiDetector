@@ -14,13 +14,15 @@ import {
 } from 'antd';
 import { HistoryOutlined, MoonOutlined, QuestionCircleOutlined, SunOutlined } from '@ant-design/icons';
 import frFR from 'antd/locale/fr_FR';
-import { IA_GRADIENT, PRIMARY } from './constants';
+import { PRIMARY } from './constants';
 import { useAnalysis } from './hooks/useAnalysis';
 import { useHistory } from './hooks/useHistory';
 import { InputPanel } from './components/InputPanel';
 import { ReportView } from './components/ReportView';
 import { HistoryDrawer } from './components/HistoryDrawer';
 import { HelpModal } from './components/HelpModal';
+import { Logo, Wordmark } from './components/Logo';
+import { AnalysisOverlay } from './components/AnalysisOverlay';
 
 const { Title, Text } = Typography;
 
@@ -68,37 +70,10 @@ export default function App() {
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '24px 16px 64px' }}>
         <Flex justify="space-between" align="center" wrap gap={12} style={{ marginBottom: 20 }}>
           <Flex align="center" gap={12}>
-            <svg
-              width="36"
-              height="36"
-              viewBox="0 0 32 32"
-              aria-label="MefIAnce"
-              style={{ flex: '0 0 auto' }}
-            >
-              <defs>
-                <linearGradient id="logo-g" x1="0" y1="0" x2="1" y2="1">
-                  <stop offset="0" stopColor="#d52b1e" />
-                  <stop offset=".5" stopColor="#b0179a" />
-                  <stop offset="1" stopColor="#6d28d9" />
-                </linearGradient>
-              </defs>
-              <rect width="32" height="32" rx="7" fill="url(#logo-g)" />
-              <circle cx="14" cy="14" r="7" fill="none" stroke="#fff" strokeWidth="3" />
-              <path d="M19 19l7 7" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" />
-            </svg>
+            <Logo />
             <div>
-              <Title
-                level={3}
-                style={{
-                  margin: 0,
-                  background: IA_GRADIENT,
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  display: 'inline-block',
-                }}
-              >
-                Mef<span style={{ fontWeight: 800 }}>IA</span>nce
+              <Title level={3} style={{ margin: 0 }}>
+                <Wordmark />
               </Title>
               <Text type="secondary" style={{ display: 'block' }}>
                 Ce texte ou ce fichier vient-il d'une IA ? Analyse 100 % locale : rien ne sort de cette
@@ -158,6 +133,7 @@ export default function App() {
         onOpen={(id) => void analysis.open(id)}
       />
       <HelpModal open={helpOpen} onClose={() => setHelpOpen(false)} />
+      <AnalysisOverlay open={analysis.loading} dark={dark} />
     </ConfigProvider>
   );
 }
