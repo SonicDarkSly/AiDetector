@@ -86,27 +86,12 @@ function SignalItem({ s }: { s: Signal }) {
             {s.detail}
           </Paragraph>
           {s.evidence && s.evidence.length > 0 && (
-            <Flex vertical gap={dark ? 4 : 3} align={dark ? 'flex-start' : undefined}>
-              {s.evidence.map((e, i) =>
-                dark ? (
-                  <span key={i} className="evidence-chip">
-                    {e}
-                  </span>
-                ) : (
-                  <Text
-                    key={i}
-                    code
-                    style={{
-                      fontSize: 11.5,
-                      whiteSpace: 'pre-wrap',
-                      wordBreak: 'break-word',
-                      display: 'block',
-                    }}
-                  >
-                    {e}
-                  </Text>
-                ),
-              )}
+            <Flex vertical gap={4} align="flex-start">
+              {s.evidence.map((e, i) => (
+                <span key={i} className={dark ? 'evidence-chip dark' : 'evidence-chip'}>
+                  {e}
+                </span>
+              ))}
             </Flex>
           )}
         </div>
@@ -116,8 +101,8 @@ function SignalItem({ s }: { s: Signal }) {
 }
 
 const ACCENTS = {
-  technical: { rgb: '255, 77, 79', text: '#ff8f91' },
-  indicators: { rgb: '146, 84, 222', text: '#c5a3f7' },
+  technical: { rgb: '255, 77, 79', dark: '#ff8f91', light: '#cf1322' },
+  indicators: { rgb: '146, 84, 222', dark: '#c5a3f7', light: '#722ed1' },
 } as const;
 type SectionKind = keyof typeof ACCENTS;
 
@@ -137,7 +122,7 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
     <Collapse
       bordered={false}
       ghost
-      className={dark ? 'signal-groups dark' : 'signal-groups'}
+      className="signal-groups"
       defaultActiveKey={groups.map((g) => g.cat)}
       items={groups.map(({ cat, items }, i) => {
         const ia = items.filter((s) => s.direction === 'ia').length;
@@ -167,21 +152,13 @@ function Groups({ signals, order }: { signals: Signal[]; order: SignalCategory[]
 }
 
 function SectionHeader({ kind, children }: { kind: SectionKind; children: ReactNode }) {
-  const { token } = theme.useToken();
   const dark = useDark();
-  const danger = kind === 'technical';
-  const style: CSSProperties = dark
-    ? {
-        background: `linear-gradient(90deg, rgba(${ACCENTS[kind].rgb}, 0.22), rgba(${ACCENTS[kind].rgb}, 0.06))`,
-        color: ACCENTS[kind].text,
-        borderBottom: `1px solid rgba(${ACCENTS[kind].rgb}, 0.3)`,
-      }
-    : {
-        background: danger ? token.colorErrorBg : token.colorFillSecondary,
-        color: danger ? token.colorErrorText : token.colorTextSecondary,
-        borderTop: danger ? 'none' : `1px solid ${token.colorBorder}`,
-        borderBottom: `1px solid ${danger ? token.colorErrorBorder : token.colorBorder}`,
-      };
+  const { rgb } = ACCENTS[kind];
+  const style: CSSProperties = {
+    background: `linear-gradient(90deg, rgba(${rgb}, ${dark ? 0.22 : 0.12}), rgba(${rgb}, ${dark ? 0.06 : 0.03}))`,
+    color: dark ? ACCENTS[kind].dark : ACCENTS[kind].light,
+    borderBottom: `1px solid rgba(${rgb}, ${dark ? 0.3 : 0.25})`,
+  };
   return (
     <div className="signal-section" style={style}>
       {children}
@@ -191,13 +168,13 @@ function SectionHeader({ kind, children }: { kind: SectionKind; children: ReactN
 
 function Section({ kind, children }: { kind: SectionKind; children: ReactNode }) {
   const dark = useDark();
-  if (!dark) return <>{children}</>;
+  const { rgb } = ACCENTS[kind];
   return (
     <div
       className="signal-panel"
       style={{
-        border: `1px solid rgba(${ACCENTS[kind].rgb}, 0.32)`,
-        background: `rgba(${ACCENTS[kind].rgb}, 0.03)`,
+        border: `1px solid rgba(${rgb}, ${dark ? 0.32 : 0.3})`,
+        background: `rgba(${rgb}, ${dark ? 0.03 : 0.015})`,
       }}
     >
       {children}
@@ -206,7 +183,6 @@ function Section({ kind, children }: { kind: SectionKind; children: ReactNode })
 }
 
 export function SignalList({ signals: all, mainOnly = false }: { signals: Signal[]; mainOnly?: boolean }) {
-  const dark = useDark();
   const main = all.filter(
     (s) => s.direction !== 'neutre' && (s.strength === 'fort' || s.strength === 'moyen'),
   );
@@ -226,7 +202,7 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
       size="small"
       title="Indices détectés"
       styles={{
-        body: dark ? { padding: 12, display: 'flex', flexDirection: 'column', gap: 12 } : { padding: 0 },
+        body: { padding: 12, display: 'flex', flexDirection: 'column', gap: 12 },
       }}
     >
       <Section kind="technical">

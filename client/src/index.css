@@ -105,10 +105,10 @@ body {
   border-radius: 10px;
   overflow: hidden;
 }
-.signal-groups.dark .ant-collapse-content > .ant-collapse-content-box {
+.signal-groups .ant-collapse-content > .ant-collapse-content-box {
   padding-top: 0 !important;
 }
-.signal-groups.dark > .ant-collapse-item:last-child .signal-item:last-child {
+.signal-groups > .ant-collapse-item:last-child .signal-item:last-child {
   border-bottom: none !important;
 }
 .evidence-chip {
@@ -116,12 +116,17 @@ body {
   max-width: 100%;
   padding: 3px 8px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border-left: 2px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.78);
+  background: rgba(0, 0, 0, 0.04);
+  border-left: 2px solid rgba(0, 0, 0, 0.15);
+  color: rgba(0, 0, 0, 0.72);
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 11.5px;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+.evidence-chip.dark {
+  background: rgba(255, 255, 255, 0.06);
+  border-left-color: rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.78);
 }
