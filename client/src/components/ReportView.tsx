@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Col, Flex, Row, Segmented, Tooltip, Typography } from 'antd';
+import { Alert, Col, Flex, Row, Segmented, Tooltip, Typography } from 'antd';
 import { BarsOutlined, LayoutOutlined, ProfileOutlined } from '@ant-design/icons';
 import type { AnalysisReport } from '../types';
 import { VerdictCard } from './VerdictCard';
@@ -42,8 +42,20 @@ export function ReportView({ report }: { report: AnalysisReport }) {
   const statsCompact = report.source.kind !== 'code' ? <StatsCard stats={report.stats} compact /> : null;
   const text = <AnnotatedText key={`text-${report.id}`} report={report} />;
 
+  const warnings = report.metadata.filter((m) => m.key === 'Avertissement').map((m) => m.value);
+
   return (
     <div id="report">
+      {warnings.map((w) => (
+        <Alert
+          key={w}
+          type="warning"
+          showIcon
+          style={{ marginBottom: 12 }}
+          message="Analyse incomplète"
+          description={w}
+        />
+      ))}
       <Flex justify="space-between" align="center" wrap gap={8} style={{ marginBottom: 12 }}>
         <Title level={5} style={{ margin: 0 }}>
           Résultat de l'analyse
