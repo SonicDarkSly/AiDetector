@@ -63,6 +63,16 @@ export interface VendorScore {
   reasons: string[];
 }
 
+export interface OriginScore {
+  id: string;
+  kind: 'ia' | 'logiciel';
+  label: string;
+  score: number | null;
+  level: 'trace' | 'indice' | 'aucun';
+  reasons: string[];
+  vendor?: Vendor;
+}
+
 export interface AnalysisReport {
   id: string;
   analyzedAt: string;
@@ -76,6 +86,7 @@ export interface AnalysisReport {
   confidence: 'faible' | 'moyenne' | 'élevée';
   summary: string;
   vendors: VendorScore[];
+  origins?: OriginScore[];
   signals: Signal[];
   metadata: MetaEntry[];
   stats: TextStats;

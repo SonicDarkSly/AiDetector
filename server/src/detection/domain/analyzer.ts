@@ -6,6 +6,8 @@ import type { Highlight, Signal, SignalDetector } from './signal/signal.js';
 import { cleanText } from './text/text-cleaner.js';
 import { computeStats } from './text/text-stats.js';
 import { evaluate, type ModelEstimate } from './verdict/verdict.policy.js';
+import { evaluateOrigins } from './origin/origin.policy.js';
+import { identifySoftware } from './origin/software.js';
 
 const MAX_ANALYZED_CHARS = 400_000;
 const MAX_DISPLAY_CHARS = 60_000;
@@ -69,10 +71,13 @@ export class Analyzer {
     }));
 
     const cleaned = cleanText(doc.text);
+    const verdict = evaluate(signals, stats, model);
+    const software = doc.kind === 'pdf' || doc.kind === 'docx' ? identifySoftware(doc.raw) : [];
     return Analysis.complete(
       {
         source: { kind: doc.kind, filename: doc.filename, mimetype: doc.mimetype, size: input.size },
-        ...evaluate(signals, stats, model),
+        ...verdict,
+        origins: evaluateOrigins(signals, software, verdict.undetermined ? null : verdict.score / 100),
         signals,
         metadata,
         stats,

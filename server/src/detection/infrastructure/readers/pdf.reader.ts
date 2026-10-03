@@ -67,8 +67,9 @@ export async function readPdf(file: UploadedFile): Promise<SourceDocument> {
   } catch (err) {
     parseError = err instanceof Error ? err.message : String(err);
   }
-  if (!text.trim() && parseError) {
-    throw new UnreadableDocumentError(`PDF illisible (${parseError}). Fichier chiffré ou endommagé ?`);
+  const latin1Head = latin1.slice(0, 1024);
+  if (!latin1Head.startsWith('%PDF-') && !text.trim()) {
+    throw new UnreadableDocumentError(`PDF illisible (${parseError ?? 'en-tête absent'}).`);
   }
   text = text
     .replace(/\r/g, '')
@@ -147,7 +148,8 @@ export async function readPdf(file: UploadedFile): Promise<SourceDocument> {
   add('Version PDF', latin1.match(/^%PDF-(\d\.\d)/)?.[1]);
   add('Liens trouvés', urls.size ? String(urls.size) : undefined);
   if (raw['pdf.reportlab']) add('En-tête du fichier', '« ReportLab Generated PDF document »');
-  if (parseError) add('Avertissement', `lecture partielle (${parseError})`);
+  if (parseError)
+    add('Avertissement', `texte non extrait (${parseError}) : seules les métadonnées sont analysées`);
 
   return {
     kind: 'pdf',

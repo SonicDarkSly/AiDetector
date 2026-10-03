@@ -21,7 +21,7 @@ import { useAnalysis } from './hooks/useAnalysis';
 import { useHistory } from './hooks/useHistory';
 import { InputPanel } from './components/InputPanel';
 import { VerdictCard } from './components/VerdictCard';
-import { VendorCard } from './components/VendorCard';
+import { OriginCard } from './components/OriginCard';
 import { SignalList } from './components/SignalList';
 import { MetadataTable } from './components/MetadataTable';
 import { StatsCard } from './components/StatsCard';
@@ -160,10 +160,7 @@ export default function App() {
               <Col xs={24} lg={10}>
                 <Flex vertical gap={16}>
                   <VerdictCard report={report} />
-                  <VendorCard
-                    vendors={report.vendors}
-                    aiLikely={!report.undetermined && report.score >= 50}
-                  />
+                  <OriginCard report={report} />
                   <MetadataTable metadata={report.metadata} kind={report.source.kind} />
                   {report.source.kind !== 'code' && <StatsCard stats={report.stats} />}
                 </Flex>

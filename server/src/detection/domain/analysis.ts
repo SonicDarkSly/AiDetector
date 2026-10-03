@@ -2,6 +2,7 @@ import { AggregateRoot } from '@nestjs/cqrs';
 import { randomUUID } from 'node:crypto';
 import type { DocKind, MetaEntry } from './document/source-document.js';
 import { AnalysisCompletedEvent } from './events/analysis-completed.event.js';
+import type { OriginScore } from './origin/origin.policy.js';
 import type { Highlight, Signal } from './signal/signal.js';
 import type { TextStats } from './text/text-stats.js';
 import type { Verdict } from './verdict/verdict.policy.js';
@@ -10,6 +11,7 @@ export interface AnalysisSnapshot extends Verdict {
   id: string;
   analyzedAt: string;
   source: { kind: DocKind; filename: string | null; mimetype: string | null; size: number };
+  origins: OriginScore[];
   signals: Signal[];
   metadata: MetaEntry[];
   stats: TextStats;
