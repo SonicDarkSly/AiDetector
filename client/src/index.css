@@ -136,3 +136,36 @@ body {
   padding-top: 12px;
   border-top: 1px solid rgba(127, 127, 127, 0.2);
 }
+
+.hl-tag {
+  display: inline-block;
+  margin: 0 4px 0 2px;
+  padding: 0 6px;
+  border-radius: 8px;
+  font-size: 10.5px;
+  line-height: 17px;
+  font-weight: 600;
+  vertical-align: 2px;
+  white-space: nowrap;
+  cursor: help;
+}
+.hl-tag-fort {
+  color: #ff4d4f;
+  background: rgba(245, 34, 45, 0.12);
+  border: 1px solid rgba(245, 34, 45, 0.35);
+}
+.hl-tag-moyen {
+  color: #fa8c16;
+  background: rgba(250, 140, 22, 0.12);
+  border: 1px solid rgba(250, 140, 22, 0.35);
+}
+.hl-tag-faible {
+  color: #d4b106;
+  background: rgba(250, 219, 20, 0.12);
+  border: 1px solid rgba(250, 219, 20, 0.4);
+}
+.hl-tag-human {
+  color: #52c41a;
+  background: rgba(82, 196, 26, 0.12);
+  border: 1px solid rgba(82, 196, 26, 0.35);
+}

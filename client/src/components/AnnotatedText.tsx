@@ -20,6 +20,40 @@ const INVISIBLE: Record<string, string> = {
 const INVISIBLE_RE =
   /[\u200B\u200C\u200D\u2060\uFEFF\u202F\u00AD\u180E\u202A-\u202E\u2066-\u2069\uE000-\uF8FF\uFE00-\uFE0F]|[\u{E0000}-\u{E007F}]+/gu;
 
+const TAGS: Record<string, string> = {
+  'art-oaicite': 'marqueur ChatGPT',
+  'art-oai-brackets': 'marqueur ChatGPT',
+  'art-citeturn': 'marqueur ChatGPT',
+  'uni-oai-pua': 'marqueur ChatGPT',
+  'art-gemini-cite': 'marqueur Gemini',
+  'art-claude-tags': 'balise Claude',
+  'art-deepseek-cite': 'marqueur DeepSeek',
+  'art-think': 'raisonnement DeepSeek / Qwen',
+  'art-copilot-cite': 'renvoi Copilot',
+  'art-grok-render': 'balise Grok',
+  'art-numeric-cites': 'renvois type Perplexity',
+  'art-share-link': 'lien de conversation IA',
+  'art-self-vendor': "l'IA se nomme",
+  'art-self-ai': "l'IA parle d'elle",
+  'art-refusal': "refus d'assistant",
+  'art-opening': 'intro de chatbot',
+  'art-closing': 'conclusion de chatbot',
+  'art-placeholders': 'champ à remplir',
+  'art-utm': 'traceur utm',
+  'art-emoji-bullets': 'émoji en puce',
+  'art-latex': 'LaTeX brut',
+  'art-markdown': 'Markdown brut',
+  'uni-homoglyph': 'lettre déguisée',
+  'sty-lexicon': 'tournure IA',
+  'sty-not-x': 'pas X, mais Y',
+  'sty-transitions': 'transition',
+  'sty-label-list': 'liste « Titre : »',
+  'sty-emdash': 'tiret long',
+  'sty-casual': 'marque humaine',
+  'sty-punct': 'marque humaine',
+  'sty-sloppy': 'marque humaine',
+};
+
 function isTagRun(c: string): boolean {
   const cp = c.codePointAt(0) ?? 0;
   return cp >= 0xe0000 && cp <= 0xe007f;
@@ -60,7 +94,12 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
   const boxClass = `annotated ${report.source.kind === 'code' ? 'code' : ''}`;
   const [showInvisible, setShowInvisible] = useState(true);
   const [showClean, setShowClean] = useState(false);
+  const [showTags, setShowTags] = useState(true);
   const labels = useMemo(() => new Map(report.signals.map((s) => [s.id, s.label])), [report.signals]);
+  const human = useMemo(
+    () => new Set(report.signals.filter((s) => s.direction === 'humain').map((s) => s.id)),
+    [report.signals],
+  );
 
   const content = useMemo(() => {
     const text = report.text;
@@ -74,11 +113,23 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
           {renderChunk(text.slice(h.start, h.end), showInvisible, `h${n}`)}
         </span>,
       );
+      const tag = TAGS[h.signalId];
+      if (showTags && tag && h.level !== 'info' && (h.level !== 'faible' || !h.signalId.startsWith('sty-'))) {
+        nodes.push(
+          <span
+            key={`g${n}`}
+            className={`hl-tag ${human.has(h.signalId) ? 'hl-tag-human' : `hl-tag-${h.level}`}`}
+            title={labels.get(h.signalId) ?? h.signalId}
+          >
+            {tag}
+          </span>,
+        );
+      }
       pos = h.end;
     });
     if (pos < text.length) nodes.push(...renderChunk(text.slice(pos), showInvisible, 'end'));
     return nodes;
-  }, [report, showInvisible, labels]);
+  }, [report, showInvisible, showTags, labels, human]);
 
   const cleaned = report.cleaned;
   const baseName = (report.source.filename ?? 'texte').replace(/\.[^.]+$/, '');
@@ -89,6 +140,10 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
       title="Texte analysé"
       extra={
         <Space size={12} wrap>
+          <Space size={4}>
+            <Switch size="small" checked={showTags} onChange={setShowTags} />
+            <Text style={{ fontSize: 12 }}>Libellés</Text>
+          </Space>
           <Space size={4}>
             <Switch size="small" checked={showInvisible} onChange={setShowInvisible} />
             <Text style={{ fontSize: 12 }}>Caractères invisibles</Text>
@@ -160,7 +215,7 @@ export function AnnotatedText({ report }: { report: AnalysisReport }) {
               </Text>
             )}
             <Text type="secondary" style={{ fontSize: 12 }}>
-              (survolez un passage pour voir le signal)
+              (survolez un libellé pour le détail)
             </Text>
           </Flex>
           <div className={boxClass}>{content}</div>
