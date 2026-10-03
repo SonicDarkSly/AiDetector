@@ -424,6 +424,10 @@ body {
   .verdict-value {
     font-size: 46px;
   }
+  .verdict-title.ant-typography {
+    white-space: nowrap;
+    font-size: clamp(12px, calc(100cqi / (var(--chars) * 0.53)), 20px);
+  }
   .verdict-info {
     flex: none;
     width: 100%;

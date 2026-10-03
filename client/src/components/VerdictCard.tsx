@@ -40,7 +40,11 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           }
         />
         <div className="verdict-info">
-          <Title level={4} style={{ margin: 0, color }}>
+          <Title
+            level={4}
+            className="verdict-title"
+            style={{ margin: 0, color, ['--chars' as string]: report.verdict.length }}
+          >
             {report.verdict}
           </Title>
           <Space size={6} wrap className="verdict-tags">

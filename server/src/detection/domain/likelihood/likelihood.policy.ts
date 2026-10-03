@@ -8,7 +8,14 @@ export function aiLogit(m: LikelihoodMeasure): number {
     bias +
     (meanLogProb.weight * (m.meanLogProb - meanLogProb.mean)) / meanLogProb.sd +
     (logTokens.weight * (Math.log(Math.min(m.tokens, maxCalibratedTokens)) - logTokens.mean)) / logTokens.sd;
-  return Math.max(-maxLogit, Math.min(maxLogit, z));
+  return Math.max(-maxLogit, Math.min(maxLogit, cautious(z, m.tokens)));
+}
+
+function cautious(z: number, tokens: number): number {
+  const { offset, perLogToken, fromTokens } = CALIBRATION.caution;
+  const margin = Math.max(0, offset - perLogToken * Math.log(Math.max(tokens, fromTokens) / fromTokens));
+  if (z <= 0) return z;
+  return Math.max(0, z - margin);
 }
 
 export function aiProbability(m: LikelihoodMeasure): number {

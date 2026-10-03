@@ -3,10 +3,10 @@ import { Modal, Table, Typography } from 'antd';
 const { Paragraph, Title, Text } = Typography;
 
 const RATES = [
-  { tokens: '30', detected: '89 %', fp: '19 %' },
-  { tokens: '50', detected: '96 %', fp: '14 %' },
-  { tokens: '80', detected: '100 %', fp: '10 %' },
-  { tokens: '120', detected: '96 %', fp: '7 %' },
+  { tokens: '30', detected: '63 %', fp: '5 %' },
+  { tokens: '50', detected: '78 %', fp: '4 %' },
+  { tokens: '80', detected: '97 %', fp: '5 %' },
+  { tokens: '120', detected: '91 %', fp: '5 %' },
   { tokens: '200', detected: '86 %', fp: '2 %' },
 ];
 
@@ -53,8 +53,10 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         plus attendus ; un humain s'en écarte davantage. Le modèle ne génère rien, il mesure. Le score combine
         la probabilité moyenne des mots et la longueur du texte, calibré sur{' '}
         <Text strong>394 textes en français</Text> (46 générés par IA, 348 écrits par des humains avant 2022).
-        Son nom et ses caractéristiques sont indiqués sous la zone de saisie ; le verdict rappelle sa
-        fiabilité pour la longueur du texte analysé.
+        Le seuil est réglé pour signaler à tort au plus 5 % des textes humains : sur un texte court, l'outil
+        préfère rester neutre plutôt qu'accuser. Les textes IA du corpus viennent tous de Claude ; les taux ne
+        sont pas mesurés pour les autres assistants. Son nom et ses caractéristiques sont indiqués sous la
+        zone de saisie ; le verdict rappelle sa fiabilité pour la longueur du texte analysé.
       </Paragraph>
       <Table
         size="small"

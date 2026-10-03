@@ -58,14 +58,17 @@ guide) : ils ne comptent alors que comme de faibles indices.
 
 Un petit modèle local (Qwen2.5 1,5B Instruct, Q4_K_M, GGUF via node-llama-cpp) mesure la probabilité de
 chaque mot. Il ne génère rien. Le score combine la log-probabilité moyenne et la longueur, calibré sur 394
-textes en français (46 générés par IA, 348 écrits par des humains avant 2022) :
+textes en français (46 générés par IA, 348 écrits par des humains avant 2022). Le seuil est réglé pour
+signaler à tort au plus 5 % des textes humains : sur un texte court, mieux vaut un résultat neutre qu'une
+fausse accusation. Les textes IA du corpus viennent tous de Claude ; les taux ne sont pas mesurés pour les
+autres assistants.
 
 | Longueur (tokens) | Textes IA détectés | Textes humains signalés à tort |
 | ----------------- | ------------------ | ------------------------------ |
-| 30                | 89 %               | 19 %                           |
-| 50                | 96 %               | 14 %                           |
-| 80                | 100 %              | 10 %                           |
-| 120               | 96 %               | 7 %                            |
+| 30                | 63 %               | 5 %                            |
+| 50                | 78 %               | 4 %                            |
+| 80                | 97 %               | 5 %                            |
+| 120               | 91 %               | 5 %                            |
 | 200               | 86 %               | 2 %                            |
 
 Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Un résultat

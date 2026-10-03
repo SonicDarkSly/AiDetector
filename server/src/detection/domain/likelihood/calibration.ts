@@ -7,13 +7,15 @@ export const CALIBRATION = {
   maxLogit: 3.5,
   // textes IA du corpus : 240 tokens max, pas d'extrapolation au-delà
   maxCalibratedTokens: 240,
+  // seuil relevé sur texte court pour signaler au plus 5 % de textes humains
+  caution: { offset: 1.5, perLogToken: 1.0, fromTokens: 30 },
 };
 
 export const MEASURED = [
-  { tokens: 30, detected: 0.89, falsePositives: 0.19 },
-  { tokens: 50, detected: 0.96, falsePositives: 0.14 },
-  { tokens: 80, detected: 1, falsePositives: 0.1 },
-  { tokens: 120, detected: 0.96, falsePositives: 0.07 },
+  { tokens: 30, detected: 0.63, falsePositives: 0.05 },
+  { tokens: 50, detected: 0.78, falsePositives: 0.04 },
+  { tokens: 80, detected: 0.97, falsePositives: 0.05 },
+  { tokens: 120, detected: 0.91, falsePositives: 0.05 },
   { tokens: 200, detected: 0.86, falsePositives: 0.02 },
 ];
 
