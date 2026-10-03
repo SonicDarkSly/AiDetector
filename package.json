@@ -1,0 +1,21 @@
+{
+  "name": "ai-detector",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Détecteur local de textes et fichiers générés par IA (métadonnées, artefacts, caractères cachés, style).",
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,magenta \"npm run dev -w server\" \"npm run dev -w client\"",
+    "build": "npm run build -w server && npm run build -w client",
+    "format": "prettier --write \"server/src/**/*.ts\" \"client/src/**/*.{ts,tsx,css}\"",
+    "typecheck": "tsc -p server/tsconfig.json --noEmit && tsc -p client/tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.7.2"
+  }
+}

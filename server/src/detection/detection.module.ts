@@ -1,0 +1,57 @@
+import { Module } from '@nestjs/common';
+import { CqrsModule } from '@nestjs/cqrs';
+import { AnalyzeFileHandler } from './application/commands/analyze-file.command.js';
+import { AnalyzeTextHandler } from './application/commands/analyze-text.command.js';
+import { ClearHistoryHandler } from './application/commands/clear-history.command.js';
+import { DeleteAnalysisHandler } from './application/commands/delete-analysis.command.js';
+import { AnalysisCompletedHandler } from './application/events/analysis-completed.handler.js';
+import { GetAnalysisHandler } from './application/queries/get-analysis.query.js';
+import { GetHistoryHandler } from './application/queries/get-history.query.js';
+import { ANALYSIS_REPOSITORY } from './domain/analysis.repository.js';
+import { Analyzer } from './domain/analyzer.js';
+import { ArtefactDetector } from './domain/detectors/artefact.detector.js';
+import { CodeDetector } from './domain/detectors/code.detector.js';
+import { MetadataDetector } from './domain/detectors/metadata.detector.js';
+import { StatsDetector } from './domain/detectors/stats.detector.js';
+import { StyleDetector } from './domain/detectors/style.detector.js';
+import { UnicodeDetector } from './domain/detectors/unicode.detector.js';
+import { DOCUMENT_READER } from './domain/document/document-reader.js';
+import { LIKELIHOOD_SCORER, type LikelihoodScorer } from './domain/likelihood/likelihood-scorer.js';
+import { FileAnalysisRepository } from './infrastructure/persistence/file-analysis.repository.js';
+import { LlamaLikelihoodScorer } from './infrastructure/likelihood/llama-likelihood.scorer.js';
+import { FileDocumentReader } from './infrastructure/readers/file-document.reader.js';
+import { AnalysisController } from './presentation/analysis.controller.js';
+
+@Module({
+  imports: [CqrsModule],
+  controllers: [AnalysisController],
+  providers: [
+    { provide: LIKELIHOOD_SCORER, useClass: LlamaLikelihoodScorer },
+    {
+      provide: Analyzer,
+      inject: [LIKELIHOOD_SCORER],
+      useFactory: (scorer: LikelihoodScorer) =>
+        new Analyzer(
+          [
+            new MetadataDetector(),
+            new ArtefactDetector(),
+            new UnicodeDetector(),
+            new CodeDetector(),
+            new StyleDetector(),
+            new StatsDetector(),
+          ],
+          scorer,
+        ),
+    },
+    { provide: DOCUMENT_READER, useClass: FileDocumentReader },
+    { provide: ANALYSIS_REPOSITORY, useClass: FileAnalysisRepository },
+    AnalyzeTextHandler,
+    AnalyzeFileHandler,
+    DeleteAnalysisHandler,
+    ClearHistoryHandler,
+    GetHistoryHandler,
+    GetAnalysisHandler,
+    AnalysisCompletedHandler,
+  ],
+})
+export class DetectionModule {}
