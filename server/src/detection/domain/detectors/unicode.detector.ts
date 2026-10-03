@@ -96,7 +96,7 @@ export class UnicodeDetector implements SignalDetector {
 
     const vs = collect(
       text,
-      /(?<![\p{Extended_Pictographic}⃣#*0-9©®™])[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]/gu,
+      /(?<![\p{Extended_Pictographic}\u20E3#*0-9©®™])[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]/gu,
       'uni-vs',
       'moyen',
     );

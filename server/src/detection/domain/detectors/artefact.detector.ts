@@ -200,7 +200,7 @@ const RULES: ArtefactRule[] = [
   },
   {
     id: 'art-emoji-bullets',
-    re: /^[ \t]*(?:✅|❌|🚀|👉|📌|🔹|🔸|✨|💡|⚡|📊|🎯|🔥|🧠|📈|🛠\uFE0F|⚠\uFE0F|📝|🔍|💼|🌟|➡\uFE0F|✔\uFE0F|1\uFE0F⃣|2\uFE0F⃣|3\uFE0F⃣)/gmu,
+    re: /^[ \t]*(?:✅|❌|🚀|👉|📌|🔹|🔸|✨|💡|⚡|📊|🎯|🔥|🧠|📈|🛠\uFE0F|⚠\uFE0F|📝|🔍|💼|🌟|➡\uFE0F|✔\uFE0F|1\uFE0F\u20E3|2\uFE0F\u20E3|3\uFE0F\u20E3)/gmu,
     label: 'Émojis utilisés comme puces',
     detail:
       'Lignes commençant par ✅ 🚀 👉 📌… : mise en forme fréquente chez les assistants. Indice faible (les humains le font aussi sur LinkedIn).',

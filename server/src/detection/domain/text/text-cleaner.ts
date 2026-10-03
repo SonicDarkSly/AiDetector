@@ -8,11 +8,15 @@ const REMOVALS: RegExp[] = [
   /【\d+(?::\d+)?†[^】\n]{0,60}】/g,
   /\b(?:cite|filecite|navlist)?turn\d+(?:search|news|view|fetch|file|image|academia|forecast|finance|product)\d+\b/g,
   /\[cite_start\]|\[cite:\s*[\d,\s-]+\]/g,
+  /<think>[\s\S]*?<\/think>\s*/g,
+  /\s?\[citation:\s?\d+\]/g,
+  /\[\^\d+\^\]/g,
+  /<argument name="citation_id">[^<]*<\/argument>|<\/?grok:render[^>]*>/g,
   /[\uE000-\uF8FF]/g,
   /[\u{E0000}-\u{E007F}]/gu,
   /[\u200B\u200C\u2060\u180E\u202A-\u202E\u2066-\u2069]/g,
   /(?<!^)\uFEFF/g,
-  /(?<![\p{Extended_Pictographic}⃣#*0-9©®™])[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]/gu,
+  /(?<![\p{Extended_Pictographic}\u20E3#*0-9©®™])[\uFE00-\uFE0F]|[\u{E0100}-\u{E01EF}]/gu,
 ];
 
 export function cleanText(text: string): { text: string; removed: number } {
