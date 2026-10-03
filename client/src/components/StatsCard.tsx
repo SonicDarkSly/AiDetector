@@ -41,7 +41,7 @@ export function StatsCard({ stats, compact = false }: { stats: TextStats; compac
     <Card size="small" title="Statistiques du texte">
       <Row gutter={[12, 12]}>
         {items.map((it) => (
-          <Col key={it.title} xs={12} sm={6} lg={compact ? 6 : 3}>
+          <Col key={it.title} xs={12} sm={6} lg={compact ? 12 : 3}>
             <Tooltip title={it.hint}>
               <div style={{ cursor: 'help' }}>
                 <Statistic

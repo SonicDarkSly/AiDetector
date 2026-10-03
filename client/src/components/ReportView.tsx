@@ -64,13 +64,13 @@ export function ReportView({ report }: { report: AnalysisReport }) {
             <Flex vertical gap={16}>
               {verdict}
               {origins}
+              {statsCompact}
             </Flex>
           </Col>
           <Col xs={24} lg={14}>
             <Flex vertical gap={16}>
               {signals}
               {metadata}
-              {statsCompact}
             </Flex>
           </Col>
           <Col span={24}>{text}</Col>
