@@ -1,7 +1,4 @@
 export const CALIBRATION = {
-  meanLogProb: { mean: -3.0495, sd: 0.8266, weight: 3.0691 },
-  logTokens: { mean: 4.1815, sd: 0.6126, weight: -1.0071 },
-  bias: -2.3673,
   minTokens: 20,
   fullReliabilityTokens: 60,
   maxLogit: 3.5,
@@ -11,12 +8,60 @@ export const CALIBRATION = {
   caution: { offset: 1.5, perLogToken: 1.0, fromTokens: 30 },
 };
 
-export const MEASURED = [
-  { tokens: 30, detected: 0.63, falsePositives: 0.05 },
-  { tokens: 50, detected: 0.78, falsePositives: 0.04 },
-  { tokens: 80, detected: 0.97, falsePositives: 0.05 },
-  { tokens: 120, detected: 0.91, falsePositives: 0.05 },
-  { tokens: 200, detected: 0.86, falsePositives: 0.02 },
-];
+export interface Feature {
+  mean: number;
+  sd: number;
+  weight: number;
+}
 
-export const CORPUS = '394 textes en français : 46 générés par IA, 348 écrits par des humains avant 2022';
+export interface MeasuredRate {
+  tokens: number;
+  detected: number;
+  falsePositives: number;
+}
+
+export interface Coefficients {
+  meanLogProb: Feature;
+  logTokens: Feature;
+  bias: number;
+}
+
+export interface Calibration extends Coefficients {
+  origin: 'origine' | 'personnalisée';
+  texts: { ai: number; human: number };
+  answers: number;
+  rates: MeasuredRate[];
+  appliedAt: string | null;
+}
+
+export const DEFAULT_CALIBRATION: Calibration = {
+  meanLogProb: { mean: -3.0495, sd: 0.8266, weight: 3.0691 },
+  logTokens: { mean: 4.1815, sd: 0.6126, weight: -1.0071 },
+  bias: -2.3673,
+  origin: 'origine',
+  texts: { ai: 46, human: 348 },
+  answers: 0,
+  rates: [
+    { tokens: 30, detected: 0.63, falsePositives: 0.05 },
+    { tokens: 50, detected: 0.78, falsePositives: 0.04 },
+    { tokens: 80, detected: 0.97, falsePositives: 0.05 },
+    { tokens: 120, detected: 0.91, falsePositives: 0.05 },
+    { tokens: 200, detected: 0.86, falsePositives: 0.02 },
+  ],
+  appliedAt: null,
+};
+
+let active: Calibration = DEFAULT_CALIBRATION;
+
+export function activeCalibration(): Calibration {
+  return active;
+}
+
+export function useCalibration(calibration: Calibration | null): void {
+  active = calibration ?? DEFAULT_CALIBRATION;
+}
+
+export function corpusLabel(c: Calibration = active): string {
+  const base = `${c.texts.ai + c.texts.human} textes en français : ${c.texts.ai} générés par IA, ${c.texts.human} écrits par des humains`;
+  return c.answers ? `${base} (dont ${c.answers} réponses données dans l'app)` : `${base} avant 2022`;
+}

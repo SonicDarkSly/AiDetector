@@ -1,8 +1,9 @@
 import { Card, Flex, Progress, Space, Tag, Tooltip, Typography } from 'antd';
 import { FileOutlined, SafetyCertificateOutlined } from '@ant-design/icons';
-import type { AnalysisReport } from '../types';
+import type { AnalysisReport, MeasuredRate } from '../types';
 import { KIND_LABELS, LANGUAGE_LABELS, MEASURED_RATES, scoreColor } from '../constants';
 import { formatDate, formatSize } from '../utils/format';
+import { KnownAnswer } from './KnownAnswer';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -61,7 +62,9 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           <Paragraph type="secondary" style={{ marginBottom: 12, fontSize: 13 }}>
             {report.summary}
           </Paragraph>
-          {undetermined && report.modelScore != null && <Trend score={report.modelScore} />}
+          {undetermined && report.modelScore != null && report.languageModel?.domain !== 'verse' && (
+            <Trend score={report.modelScore} />
+          )}
           <Flex vertical gap={4} className="verdict-bars">
             <Tooltip title="Métadonnées, artefacts de copier-coller, caractères cachés : des traces concrètes, fiables quand elles existent.">
               <div>
@@ -84,7 +87,11 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
                     size="small"
                     format={(p) => `${p}%`}
                   />
-                  <Reliability tokens={report.languageModel?.tokens} />
+                  <Reliability
+                    tokens={report.languageModel?.tokens}
+                    domain={report.languageModel?.domain}
+                    measured={report.languageModel?.rate}
+                  />
                 </div>
               </Tooltip>
             )}
@@ -102,23 +109,45 @@ export function VerdictCard({ report }: { report: AnalysisReport }) {
           </Flex>
         </div>
       </div>
-      <Text type="secondary" className="verdict-footer">
-        Analysé le {formatDate(report.analyzedAt)} · {formatSize(source.size)} · {stats.words} mots ·{' '}
-        {LANGUAGE_LABELS[stats.language]}
-      </Text>
+      <div className="verdict-footer">
+        <Text type="secondary" style={{ fontSize: 11 }}>
+          Analysé le {formatDate(report.analyzedAt)} · {formatSize(source.size)} · {stats.words} mots ·{' '}
+          {LANGUAGE_LABELS[stats.language]}
+        </Text>
+        <KnownAnswer report={report} />
+      </div>
     </Card>
   );
 }
 
-function Reliability({ tokens }: { tokens?: number }) {
+function Reliability({
+  tokens,
+  domain,
+  measured,
+}: {
+  tokens?: number;
+  domain?: string;
+  measured?: MeasuredRate;
+}) {
   if (!tokens) return null;
+  if (domain === 'verse')
+    return (
+      <Text type="warning" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
+        Texte en vers : le modèle n'est calibré que sur de la prose, valeur indicative
+      </Text>
+    );
   if (tokens < MEASURED_RATES[0].tokens)
     return (
       <Text type="warning" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
         Sur {tokens} tokens seulement : valeur indicative, non fiable
       </Text>
     );
-  const rate = [...MEASURED_RATES].reverse().find((r) => tokens >= r.tokens) ?? MEASURED_RATES[0];
+  const rate = measured
+    ? {
+        detected: Math.round(measured.detected * 100),
+        falsePositives: Math.round(measured.falsePositives * 100),
+      }
+    : ([...MEASURED_RATES].reverse().find((r) => tokens >= r.tokens) ?? MEASURED_RATES[0]);
   return (
     <Text type="secondary" style={{ fontSize: 11, display: 'block', marginTop: -2 }}>
       Sur {tokens} tokens : {rate.detected} % des textes IA repérés, {rate.falsePositives} % de textes humains

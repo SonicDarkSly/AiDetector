@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Flex, Spin, Tag, Tooltip, Typography } from 'antd';
+import { Button, Flex, Spin, Tag, Tooltip, Typography } from 'antd';
 import { ThunderboltFilled } from '@ant-design/icons';
 import { activityLabel, useModelActivity } from '../hooks/useModelActivity';
 import { api } from '../api';
 import { IA_GRADIENT } from '../constants';
-import type { LanguageModelInfo } from '../types';
+import type { CalibrationStatus, LanguageModelInfo } from '../types';
+import { CalibrationModal } from './CalibrationModal';
+import { ANSWERS_CHANGED } from './KnownAnswer';
 
 const { Text } = Typography;
 
@@ -36,6 +38,21 @@ function size(bytes: number | null): string | null {
 export function ModelBadge({ busy }: { busy: boolean }) {
   const [info, setInfo] = useState<LanguageModelInfo | null>(null);
   const activity = useModelActivity(busy);
+  const [calibration, setCalibration] = useState<CalibrationStatus | null>(null);
+  const [calibrationOpen, setCalibrationOpen] = useState(false);
+
+  const loadCalibration = () =>
+    api
+      .calibration()
+      .then(setCalibration)
+      .catch(() => setCalibration(null));
+
+  useEffect(() => {
+    void loadCalibration();
+    const refresh = () => void loadCalibration();
+    window.addEventListener(ANSWERS_CHANGED, refresh);
+    return () => window.removeEventListener(ANSWERS_CHANGED, refresh);
+  }, []);
 
   useEffect(() => {
     api
@@ -105,6 +122,28 @@ export function ModelBadge({ busy }: { busy: boolean }) {
           tokens. Pas pour le code, ni pour les métadonnées et les traces techniques, vérifiées sans IA. Seul
           modèle de l&apos;application, chargé à la demande.
         </Text>
+        {calibration && (
+          <Text type="secondary" style={{ fontSize: 11.5, display: 'block' }}>
+            Calibration {calibration.active.origin === 'origine' ? "d'origine" : 'personnalisée'} (
+            {calibration.active.texts.ai + calibration.active.texts.human} textes) ·{' '}
+            {calibration.answers.ai + calibration.answers.human} réponse(s) donnée(s)
+            {calibration.proposal ? ' · recalibrage possible' : ''}
+            <Button
+              type="link"
+              size="small"
+              style={{ fontSize: 11.5, height: 'auto', padding: '0 4px' }}
+              onClick={() => setCalibrationOpen(true)}
+            >
+              Détails
+            </Button>
+          </Text>
+        )}
+        <CalibrationModal
+          open={calibrationOpen}
+          status={calibration}
+          onClose={() => setCalibrationOpen(false)}
+          onChanged={() => void loadCalibration()}
+        />
       </div>
     </Flex>
   );

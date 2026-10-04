@@ -407,9 +407,16 @@ body {
   font-size: 34px;
 }
 .verdict-footer {
-  display: block;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 12px;
   margin-top: 10px;
-  font-size: 11px;
+}
+.verdict-footer .known-answer {
+  padding-inline: 0;
+  font-size: 12px;
 }
 @container (max-width: 560px) {
   .verdict-main {
@@ -441,6 +448,7 @@ body {
     margin-top: 4px;
   }
   .verdict-footer {
+    justify-content: center;
     text-align: center;
   }
 }

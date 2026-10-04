@@ -7,6 +7,7 @@ import {
   NotFoundException,
   Param,
   Post,
+  Put,
   Req,
   UploadedFile,
   UseInterceptors,
@@ -20,6 +21,19 @@ import { AnalyzeTextCommand } from '../application/commands/analyze-text.command
 import { ClearHistoryCommand } from '../application/commands/clear-history.command.js';
 import { DeleteAnalysisCommand } from '../application/commands/delete-analysis.command.js';
 import { GetAnalysisQuery } from '../application/queries/get-analysis.query.js';
+import { AnswerNotPossibleError, SetAnswerCommand } from '../application/commands/answer.command.js';
+import {
+  ApplyCalibrationCommand,
+  NotEnoughAnswersError,
+  ResetCalibrationCommand,
+} from '../application/commands/calibration.command.js';
+import {
+  GetAnswerQuery,
+  GetCalibrationQuery,
+  type CalibrationStatus,
+} from '../application/queries/calibration.query.js';
+import type { Answer } from '../domain/likelihood/calibration.store.js';
+import type { Calibration } from '../domain/likelihood/calibration.js';
 import { GetHistoryQuery } from '../application/queries/get-history.query.js';
 import {
   GetLanguageModelQuery,
@@ -47,6 +61,53 @@ export class AnalysisController {
   @Get('model/activity')
   async modelActivity(): Promise<{ activity: ModelActivity | null }> {
     return { activity: await this.queries.execute(new GetModelActivityQuery()) };
+  }
+
+  @Get('calibration')
+  calibration(): Promise<CalibrationStatus> {
+    return this.queries.execute(new GetCalibrationQuery());
+  }
+
+  @Post('calibration/apply')
+  async applyCalibration(): Promise<Calibration> {
+    try {
+      return await this.commands.execute(new ApplyCalibrationCommand());
+    } catch (err) {
+      if (err instanceof NotEnoughAnswersError) throw new BadRequestException({ error: err.message });
+      throw err;
+    }
+  }
+
+  @Post('calibration/reset')
+  resetCalibration(): Promise<Calibration> {
+    return this.commands.execute(new ResetCalibrationCommand());
+  }
+
+  @Get('reports/:id/answer')
+  async answer(@Param('id') id: string): Promise<{ answer: Answer | null }> {
+    return { answer: await this.queries.execute(new GetAnswerQuery(id)) };
+  }
+
+  @Put('reports/:id/answer')
+  async setAnswer(
+    @Param('id') id: string,
+    @Body() body: { label?: unknown; vendor?: unknown },
+  ): Promise<{ answer: Answer | null }> {
+    const label = body?.label === 'ai' || body?.label === 'human' ? body.label : null;
+    if (!label) throw new BadRequestException({ error: 'réponse attendue : « ai » ou « human »' });
+    const vendor = typeof body.vendor === 'string' && body.vendor.length <= 40 ? body.vendor : null;
+    try {
+      return { answer: await this.commands.execute(new SetAnswerCommand(id, label, vendor)) };
+    } catch (err) {
+      if (err instanceof AnswerNotPossibleError) throw new BadRequestException({ error: err.message });
+      throw err;
+    }
+  }
+
+  @Delete('reports/:id/answer')
+  async removeAnswer(@Param('id') id: string): Promise<{ answer: null }> {
+    await this.commands.execute(new SetAnswerCommand(id, null));
+    return { answer: null };
   }
 
   @Post('analyze/text')

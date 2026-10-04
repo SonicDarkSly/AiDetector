@@ -38,6 +38,9 @@ export interface LanguageModelUsage {
   status: 'used' | 'too-short' | 'skipped' | LikelihoodStatus;
   tokens?: number;
   elapsedMs?: number;
+  domain?: 'prose' | 'technical' | 'verse';
+  meanLogProb?: number;
+  rate?: { tokens: number; detected: number; falsePositives: number };
 }
 
 export type LikelihoodStatus = 'ready' | 'idle' | 'missing' | 'disabled' | 'error';

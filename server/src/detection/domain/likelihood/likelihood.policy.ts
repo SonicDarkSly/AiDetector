@@ -1,14 +1,26 @@
 import type { Signal } from '../signal/signal.js';
-import { CALIBRATION, CORPUS, MEASURED } from './calibration.js';
+import {
+  CALIBRATION,
+  activeCalibration,
+  corpusLabel,
+  type Coefficients,
+  type MeasuredRate,
+} from './calibration.js';
 import type { LikelihoodMeasure } from './likelihood-scorer.js';
+import type { TextDomain } from '../text/genre.js';
+
+export function logitWith(c: Coefficients, meanLogProb: number, tokens: number): number {
+  const { maxLogit, maxCalibratedTokens } = CALIBRATION;
+  const z =
+    c.bias +
+    (c.meanLogProb.weight * (meanLogProb - c.meanLogProb.mean)) / c.meanLogProb.sd +
+    (c.logTokens.weight * (Math.log(Math.min(tokens, maxCalibratedTokens)) - c.logTokens.mean)) /
+      c.logTokens.sd;
+  return Math.max(-maxLogit, Math.min(maxLogit, cautious(z, tokens)));
+}
 
 export function aiLogit(m: LikelihoodMeasure): number {
-  const { meanLogProb, logTokens, bias, maxLogit, maxCalibratedTokens } = CALIBRATION;
-  const z =
-    bias +
-    (meanLogProb.weight * (m.meanLogProb - meanLogProb.mean)) / meanLogProb.sd +
-    (logTokens.weight * (Math.log(Math.min(m.tokens, maxCalibratedTokens)) - logTokens.mean)) / logTokens.sd;
-  return Math.max(-maxLogit, Math.min(maxLogit, cautious(z, m.tokens)));
+  return logitWith(activeCalibration(), m.meanLogProb, m.tokens);
 }
 
 function cautious(z: number, tokens: number): number {
@@ -27,28 +39,27 @@ export function reliability(tokens: number): number {
   return Math.max(0, Math.min(1, (tokens - minTokens) / (fullReliabilityTokens - minTokens)));
 }
 
-function measuredAt(tokens: number) {
-  return MEASURED.reduce((best, m) =>
+export function measuredAt(tokens: number): MeasuredRate {
+  return activeCalibration().rates.reduce((best, m) =>
     Math.abs(m.tokens - tokens) < Math.abs(best.tokens - tokens) ? m : best,
   );
 }
 
-const HUMAN_CAP = 15;
-const TECHNICAL_HUMAN_CAP = 5;
+// côté humain ce n'est qu'un indice : IA retouchée, texte technique, familier ou en vers sortent pareil
+const HUMAN_CAP: Record<TextDomain, number> = { prose: 15, technical: 5, verse: 0 };
 
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 
-export function likelihoodSignal(m: LikelihoodMeasure, technical = false): Signal {
+export function likelihoodSignal(m: LikelihoodMeasure, domain: TextDomain = 'prose'): Signal {
   const p = aiProbability(m);
   const r = reliability(m.tokens);
-  // côté humain ce n'est qu'un indice : IA retouchée, texte technique ou familier sortent pareil
-  const points = Math.max(technical ? -TECHNICAL_HUMAN_CAP : -HUMAN_CAP, Math.round(11 * r * aiLogit(m)));
+  const points = Math.max(-HUMAN_CAP[domain], Math.round(11 * r * aiLogit(m)));
   const ref = measuredAt(m.tokens);
   const evidence = [
     `Modèle : ${m.model}, ${m.tokens} tokens en ${(m.elapsedMs / 1000).toFixed(1)} s`,
     `Log-probabilité moyenne : ${m.meanLogProb.toFixed(2)} · entropie moyenne : ${m.meanEntropy.toFixed(2)} · Fast-DetectGPT : ${m.criterion.toFixed(2)}`,
     `Mesuré vers ${ref.tokens} tokens : ${pct(ref.detected)} des textes IA détectés, ${pct(ref.falsePositives)} des textes humains signalés à tort`,
-    `Corpus de calibration : ${CORPUS}`,
+    `Corpus de calibration : ${corpusLabel()}`,
   ];
 
   if (r === 0) {
@@ -66,6 +77,19 @@ export function likelihoodSignal(m: LikelihoodMeasure, technical = false): Signa
 
   const ia = p >= 0.5;
   const extreme = p > 0.9 || p < 0.1;
+  if (domain === 'verse' && !ia) {
+    return {
+      id: 'model-likelihood',
+      category: 'model',
+      label: `Texte en vers : mesure non concluante (${pct(p)})`,
+      detail:
+        "Le modèle n'a été calibré que sur de la prose. Rimes et images imposent des mots inattendus : un poème paraît peu prévisible, même écrit par une IA. Cette mesure ne pousse donc pas vers « humain ».",
+      strength: 'info',
+      direction: 'neutre',
+      points: 0,
+      evidence,
+    };
+  }
   return {
     id: 'model-likelihood',
     category: 'model',
@@ -81,10 +105,13 @@ export function likelihoodSignal(m: LikelihoodMeasure, technical = false): Signa
     evidence: [
       ...evidence,
       ...(r < 1 ? [`Fiabilité réduite : texte court (${pct(r)})`] : []),
-      ...(technical
+      ...(domain === 'technical'
         ? [
             "Document technique (code, tableaux, jargon) : mesure hors du domaine de calibration, un texte d'IA de ce type sort souvent « peu prévisible »",
           ]
+        : []),
+      ...(domain === 'verse'
+        ? ['Texte en vers : hors du domaine de calibration, mais un poème aussi prévisible reste un indice']
         : []),
     ],
   };

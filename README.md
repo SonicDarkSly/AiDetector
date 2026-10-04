@@ -75,6 +75,18 @@ Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code 
 « peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
 familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 5 minutes sans analyse.
 
+Le modèle n'est calibré que sur de la prose. Un poème ou un texte en vers (lignes courtes, rimes) est
+reconnu : sa mesure ne pousse jamais vers « humain ».
+
+### Améliorer la mesure avec ses réponses
+
+En bas du verdict, « Je connais la réponse » permet d'indiquer d'où vient vraiment un texte (IA, et
+laquelle, ou humain). Seuls deux chiffres sont conservés dans `server/data/answers.json` : la prévisibilité
+moyenne et la longueur, jamais le texte. À partir de 20 réponses sur de la prose, l'application propose un
+recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses bien classées
+par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible. Les mesures du
+corpus d'origine (sans les textes) sont dans `server/calibration-samples.json`.
+
 ### Code source
 
 Le modèle de langage ne mesure pas le code. Les indices viennent des commentaires : typographie de
@@ -119,7 +131,9 @@ Monorepo npm (`server`, `client`).
   - `detection/presentation` : API HTTP
 - `client` : React 18, Vite 6, Ant Design 5
 
-API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET /api/model/activity`, `GET /api/reports`,
+API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET /api/model/activity`, `GET /api/calibration`,
+`POST /api/calibration/apply`, `POST /api/calibration/reset`, `GET|PUT|DELETE /api/reports/:id/answer`,
+`GET /api/reports`,
 `GET /api/reports/:id`, `DELETE /api/reports/:id`, `DELETE /api/reports`, `GET /api/health`.
 
 Les analyses sont conservées dans `server/data/reports` (200 au maximum).

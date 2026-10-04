@@ -1,10 +1,11 @@
 import { Analysis } from './analysis.js';
 import type { SourceDocument } from './document/source-document.js';
 import type { LanguageModelUsage, LikelihoodScorer } from './likelihood/likelihood-scorer.js';
-import { aiProbability, likelihoodSignal, reliability } from './likelihood/likelihood.policy.js';
+import { aiProbability, likelihoodSignal, measuredAt, reliability } from './likelihood/likelihood.policy.js';
 import type { Highlight, Signal, SignalDetector } from './signal/signal.js';
 import { cleanText } from './text/text-cleaner.js';
 import { proseRatio, proseSample } from './text/prose-sample.js';
+import { looksLikeVerse, type TextDomain } from './text/genre.js';
 import { computeStats } from './text/text-stats.js';
 import { evaluate, type ModelEstimate } from './verdict/verdict.policy.js';
 import { evaluateOrigins } from './origin/origin.policy.js';
@@ -54,16 +55,31 @@ export class Analyzer {
       : null;
     if (this.scorer && doc.kind !== 'code' && stats.words >= 5) {
       const isDocument = doc.kind === 'pdf' || doc.kind === 'docx';
-      const sample = isDocument ? proseSample(doc.text) : doc.text;
+      const domain: TextDomain = looksLikeVerse(doc.text)
+        ? 'verse'
+        : isDocument && proseRatio(doc.text) < TECHNICAL_PROSE_RATIO
+          ? 'technical'
+          : 'prose';
+      const sample = isDocument && domain !== 'verse' ? proseSample(doc.text) : doc.text;
       const measure = await this.scorer.measure(sample);
       if (measure) {
-        signals.push(likelihoodSignal(measure, isDocument && proseRatio(doc.text) < TECHNICAL_PROSE_RATIO));
-        model = { probability: aiProbability(measure), reliability: reliability(measure.tokens) };
+        const probability = aiProbability(measure);
+        const r = reliability(measure.tokens);
+        signals.push(likelihoodSignal(measure, domain));
+        model = {
+          probability,
+          // un poème peu prévisible ne dit rien : la mesure ne doit pas peser comme sur de la prose
+          reliability: domain === 'verse' && probability < 0.5 ? Math.min(r, 0.4) : r,
+          domain,
+        };
         languageModel = {
           name: measure.model,
           status: 'used',
           tokens: measure.tokens,
           elapsedMs: measure.elapsedMs,
+          domain,
+          meanLogProb: measure.meanLogProb,
+          rate: measuredAt(measure.tokens),
         };
       } else {
         signals.push(this.unavailable());

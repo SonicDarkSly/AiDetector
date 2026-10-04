@@ -1,6 +1,7 @@
 import { TECHNICAL_CATEGORIES, type Signal } from '../signal/signal.js';
 import { AI_VENDORS, VENDOR_LABELS, type Vendor, type VendorScore } from '../signal/vendor.js';
 import type { TextStats } from '../text/text-stats.js';
+import type { TextDomain } from '../text/genre.js';
 
 export type Confidence = 'faible' | 'moyenne' | 'élevée';
 
@@ -19,6 +20,7 @@ export interface Verdict {
 export interface ModelEstimate {
   probability: number;
   reliability: number;
+  domain?: TextDomain;
 }
 
 const STRENGTH_FACTOR: Record<Signal['strength'], number> = { fort: 3, moyen: 2, faible: 1, info: 0.5 };
@@ -58,7 +60,7 @@ export function evaluate(
     !mediumTech &&
     !modelReliable &&
     humanSignals.length === 0 &&
-    (!anyIa || (stats.words < 80 && score < 50));
+    (!anyIa || (stats.words < 80 && score < 50) || (model?.domain === 'verse' && score < 50));
 
   return {
     score,
@@ -112,6 +114,8 @@ function summarize(
   model: ModelEstimate | null,
 ): string {
   if (undetermined) {
+    if (model?.domain === 'verse')
+      return "Poème ou texte en vers sans trace technique. Le modèle n'est pas fiable sur ce genre : rimes et images rendent tout poème peu prévisible, qu'il vienne d'un humain ou d'une IA. Rien ne permet de trancher.";
     return stats.words < 150
       ? `Texte court (${stats.words} mots) sans trace technique, trop court aussi pour une mesure fiable par le modèle. Copié proprement, un texte d'IA de cette taille ne se distingue pas d'un texte humain. Analysez plutôt le fichier d'origine ou un texte plus long.`
       : "Ni trace technique ni indice exploitable : rien ne permet de trancher. Un texte d'IA retouché ne laisse pas forcément de trace.";

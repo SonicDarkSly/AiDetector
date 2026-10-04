@@ -71,6 +71,21 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         ]}
       />
 
+      <Paragraph>
+        Le modèle n'est calibré que sur de la prose. Un poème ou un texte en vers est reconnu (lignes courtes,
+        rimes) : sa mesure ne pousse jamais vers « humain », car rimes et images rendent tout poème peu
+        prévisible, même écrit par une IA.
+      </Paragraph>
+      <Paragraph>
+        <Text strong>Améliorer la mesure avec tes réponses.</Text> En bas du verdict, « Je connais la réponse
+        » permet d'indiquer d'où vient vraiment un texte, quand tu le sais. Seuls deux chiffres sont gardés
+        (prévisibilité moyenne et longueur), jamais le texte. À partir de 20 réponses sur de la prose, le
+        bouton « Détails » sous la zone de saisie propose un recalibrage : il montre les taux actuels et
+        proposés, et le nombre de tes réponses bien classées par chacun. Rien n'est appliqué sans ton accord,
+        et on peut revenir à la calibration d'origine. Les taux du tableau ci-dessus sont ceux de la
+        calibration d'origine.
+      </Paragraph>
+
       <Title level={5}>3. Indices de style</Title>
       <Paragraph>
         Tendances, jamais des preuves : vocabulaire sur-employé par les modèles (« il est important de noter

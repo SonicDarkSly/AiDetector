@@ -78,6 +78,44 @@ export interface LanguageModelUsage {
   status: 'used' | 'too-short' | 'skipped' | 'ready' | 'idle' | 'missing' | 'disabled' | 'error';
   tokens?: number;
   elapsedMs?: number;
+  domain?: 'prose' | 'technical' | 'verse';
+  meanLogProb?: number;
+  rate?: MeasuredRate;
+}
+
+export interface MeasuredRate {
+  tokens: number;
+  detected: number;
+  falsePositives: number;
+}
+
+export interface Answer {
+  label: 'ai' | 'human';
+  vendor: string | null;
+  tokens: number;
+  meanLogProb: number;
+  domain: 'prose' | 'technical' | 'verse';
+  at: string;
+}
+
+export interface Calibration {
+  origin: 'origine' | 'personnalisée';
+  texts: { ai: number; human: number };
+  answers: number;
+  rates: MeasuredRate[];
+  appliedAt: string | null;
+}
+
+export interface CalibrationStatus {
+  active: Calibration;
+  answers: { ai: number; human: number; unused: number; vendors: Record<string, number> };
+  minimum: number;
+  proposal: {
+    calibration: Calibration;
+    current: { rates: MeasuredRate[]; correct: number };
+    proposed: { correct: number };
+    answersUsed: number;
+  } | null;
 }
 
 export interface ModelActivity {
