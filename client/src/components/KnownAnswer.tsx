@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Flex, Popover, Radio, Select, Tooltip, Typography, message } from 'antd';
-import { CheckCircleFilled, QuestionCircleOutlined } from '@ant-design/icons';
+import { CheckCircleFilled, ReadOutlined } from '@ant-design/icons';
 import { api } from '../api';
 import type { AnalysisReport, Answer } from '../types';
 
@@ -54,8 +54,8 @@ export function KnownAnswer({ report }: { report: AnalysisReport }) {
   if (!eligible) {
     return (
       <Tooltip title="Possible seulement quand le modèle de langage a mesuré le texte (pas pour le code, un texte très court ou une ancienne analyse).">
-        <Button type="link" size="small" disabled icon={<QuestionCircleOutlined />}>
-          Je connais la réponse
+        <Button type="link" size="small" disabled icon={<ReadOutlined />}>
+          Apprentissage
         </Button>
       </Tooltip>
     );
@@ -145,16 +145,16 @@ export function KnownAnswer({ report }: { report: AnalysisReport }) {
       open={open}
       onOpenChange={setOpen}
       trigger="click"
-      title="D'où vient vraiment ce texte ?"
+      title="Apprentissage : d'où vient vraiment ce texte ?"
       content={content}
     >
       <Button
         type="link"
         size="small"
-        icon={answer ? <CheckCircleFilled /> : <QuestionCircleOutlined />}
+        icon={answer ? <CheckCircleFilled /> : <ReadOutlined />}
         className="known-answer"
       >
-        {answer ? `Réponse : ${describe(answer)}` : 'Je connais la réponse'}
+        {answer ? `Apprentissage : ${describe(answer)}` : 'Apprentissage'}
       </Button>
     </Popover>
   );

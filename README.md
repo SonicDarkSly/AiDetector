@@ -78,9 +78,9 @@ familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libér
 Le modèle n'est calibré que sur de la prose. Un poème ou un texte en vers (lignes courtes, rimes) est
 reconnu : sa mesure ne pousse jamais vers « humain ».
 
-### Améliorer la mesure avec ses réponses
+### Apprentissage
 
-En bas du verdict, « Je connais la réponse » permet d'indiquer d'où vient vraiment un texte (IA, et
+En bas du verdict, « Apprentissage » permet d'indiquer d'où vient vraiment un texte (IA, et
 laquelle, ou humain). Seuls deux chiffres sont conservés dans `server/data/answers.json` : la prévisibilité
 moyenne et la longueur, jamais le texte. À partir de 20 réponses sur de la prose, l'application propose un
 recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses bien classées

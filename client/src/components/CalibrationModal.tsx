@@ -112,8 +112,8 @@ export function CalibrationModal({
         )}
       </Flex>
       <Paragraph type="secondary" style={{ fontSize: 12 }}>
-        Pour répondre, utilise « Je connais la réponse » en bas du verdict, uniquement quand tu sais d'où
-        vient le texte. Chaque réponse compte autant qu'un texte du corpus d'origine.
+        Pour répondre, utilise « Apprentissage » en bas du verdict, uniquement quand tu sais d'où vient le
+        texte. Chaque réponse compte autant qu'un texte du corpus d'origine.
       </Paragraph>
 
       {!proposal ? (
