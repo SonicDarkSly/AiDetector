@@ -10,7 +10,7 @@ import type {
   ModelActivity,
 } from '../../domain/likelihood/likelihood-scorer.js';
 
-const MAX_TOKENS = 400;
+const MAX_TOKENS = CALIBRATION.maxTokens;
 const CONTEXT_SIZE = 512;
 const TOP_K = 256;
 const IDLE_UNLOAD_MS = 2 * 60 * 1000;

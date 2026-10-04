@@ -135,7 +135,7 @@ export class Analyzer {
       label: 'Modèle de langage indisponible',
       detail:
         status === 'missing'
-          ? "Le modèle n'est pas encore téléchargé : relancez l'application avec le lanceur pour le récupérer (environ 1 Go, une seule fois)."
+          ? "Le modèle n'est pas encore téléchargé : relancez l'application avec le lanceur pour le récupérer (environ 2 Go, une seule fois)."
           : status === 'disabled'
             ? 'Analyse par modèle désactivée (MEFIANCE_MODEL=off).'
             : "Le modèle n'a pas pu être chargé : voir server/logs/access.log.",

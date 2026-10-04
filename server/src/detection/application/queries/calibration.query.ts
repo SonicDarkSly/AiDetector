@@ -6,7 +6,8 @@ import {
   type Answer,
   type CalibrationStore,
 } from '../../domain/likelihood/calibration.store.js';
-import { MIN_ANSWERS, propose, type Proposal } from '../../domain/likelihood/recalibration.js';
+import { MIN_ANSWERS, propose, usableAnswers, type Proposal } from '../../domain/likelihood/recalibration.js';
+import { LIKELIHOOD_SCORER, type LikelihoodScorer } from '../../domain/likelihood/likelihood-scorer.js';
 
 export interface CalibrationStatus {
   active: Calibration;
@@ -21,16 +22,20 @@ export class GetCalibrationQuery {}
 export class GetCalibrationHandler implements IQueryHandler<GetCalibrationQuery, CalibrationStatus> {
   private cache: { key: string; proposal: Proposal | null } | null = null;
 
-  constructor(@Inject(CALIBRATION_STORE) private readonly store: CalibrationStore) {}
+  constructor(
+    @Inject(CALIBRATION_STORE) private readonly store: CalibrationStore,
+    @Inject(LIKELIHOOD_SCORER) private readonly scorer: LikelihoodScorer,
+  ) {}
 
   async execute(): Promise<CalibrationStatus> {
     const answers = Object.values(await this.store.answers());
     const active = activeCalibration();
-    const key = `${active.appliedAt}|${answers.map((a) => a.at).join(',')}`;
+    const model = this.scorer.modelName();
+    const key = `${model}|${active.appliedAt}|${answers.map((a) => a.at).join(',')}`;
     if (this.cache?.key !== key) {
-      this.cache = { key, proposal: propose(await this.store.baseSamples(), answers, active) };
+      this.cache = { key, proposal: propose(await this.store.baseSamples(), answers, active, model) };
     }
-    const prose = answers.filter((a) => a.domain === 'prose');
+    const prose = usableAnswers(answers, model);
     const vendors: Record<string, number> = {};
     for (const a of prose)
       if (a.label === 'ai') vendors[a.vendor ?? 'autre'] = (vendors[a.vendor ?? 'autre'] ?? 0) + 1;

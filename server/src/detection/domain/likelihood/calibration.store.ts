@@ -10,6 +10,7 @@ export interface Answer {
   tokens: number;
   meanLogProb: number;
   domain: TextDomain;
+  model?: string;
   at: string;
 }
 

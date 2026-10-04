@@ -123,8 +123,20 @@ export interface Proposal {
   answersUsed: number;
 }
 
-export function propose(base: Sample[], answers: Answer[], current: Calibration): Proposal | null {
-  const usable = answers.filter((a) => a.domain === 'prose' && a.tokens >= CALIBRATION.minTokens);
+// une mesure ne vaut que pour le modèle qui l'a faite
+export function usableAnswers(answers: Answer[], model: string | null): Answer[] {
+  return answers.filter(
+    (a) => a.domain === 'prose' && a.tokens >= CALIBRATION.minTokens && a.model === model,
+  );
+}
+
+export function propose(
+  base: Sample[],
+  answers: Answer[],
+  current: Calibration,
+  model: string | null,
+): Proposal | null {
+  const usable = usableAnswers(answers, model);
   if (usable.length < MIN_ANSWERS) return null;
   const firstGroup = Math.max(...base.map((s) => s.group)) + 1;
   const extra: Sample[] = usable.map((a, i) => ({

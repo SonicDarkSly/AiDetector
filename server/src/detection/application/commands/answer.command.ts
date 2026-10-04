@@ -42,6 +42,7 @@ export class SetAnswerHandler implements ICommandHandler<SetAnswerCommand, Answe
       tokens: usage.tokens,
       meanLogProb: usage.meanLogProb,
       domain: usage.domain ?? 'prose',
+      model: usage.name ?? undefined,
       at: new Date().toISOString(),
     };
     answers[reportId] = answer;

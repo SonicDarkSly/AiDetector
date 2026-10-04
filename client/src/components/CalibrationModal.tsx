@@ -107,7 +107,8 @@ export function CalibrationModal({
         ))}
         {answers.unused > 0 && (
           <Text type="secondary" style={{ fontSize: 12 }}>
-            + {answers.unused} sur des poèmes ou documents techniques, non utilisées
+            + {answers.unused} non utilisée(s) : poème, document technique, texte trop court ou mesure d'un
+            ancien modèle
           </Text>
         )}
       </Flex>

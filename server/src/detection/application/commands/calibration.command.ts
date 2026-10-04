@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from '@nestjs/cqrs';
 import { activeCalibration, type Calibration } from '../../domain/likelihood/calibration.js';
 import { CALIBRATION_STORE, type CalibrationStore } from '../../domain/likelihood/calibration.store.js';
 import { MIN_ANSWERS, propose } from '../../domain/likelihood/recalibration.js';
+import { LIKELIHOOD_SCORER, type LikelihoodScorer } from '../../domain/likelihood/likelihood-scorer.js';
 
 export class NotEnoughAnswersError extends Error {}
 
@@ -10,13 +11,17 @@ export class ApplyCalibrationCommand {}
 
 @CommandHandler(ApplyCalibrationCommand)
 export class ApplyCalibrationHandler implements ICommandHandler<ApplyCalibrationCommand, Calibration> {
-  constructor(@Inject(CALIBRATION_STORE) private readonly store: CalibrationStore) {}
+  constructor(
+    @Inject(CALIBRATION_STORE) private readonly store: CalibrationStore,
+    @Inject(LIKELIHOOD_SCORER) private readonly scorer: LikelihoodScorer,
+  ) {}
 
   async execute(): Promise<Calibration> {
     const proposal = propose(
       await this.store.baseSamples(),
       Object.values(await this.store.answers()),
       activeCalibration(),
+      this.scorer.modelName(),
     );
     if (!proposal)
       throw new NotEnoughAnswersError(`il faut au moins ${MIN_ANSWERS} réponses sur de la prose`);

@@ -24,7 +24,7 @@ const STATUS: Record<LanguageModelInfo['status'], { label: string; color: string
   missing: {
     label: 'non téléchargé',
     color: 'orange',
-    hint: 'Relancez avec le lanceur pour le télécharger (environ 1 Go, une seule fois).',
+    hint: 'Relancez avec le lanceur pour le télécharger (environ 2 Go, une seule fois).',
   },
   disabled: { label: 'désactivé', color: 'default', hint: 'Désactivé par MEFIANCE_MODEL=off.' },
   error: { label: 'erreur', color: 'red', hint: 'Chargement impossible : voir server/logs/access.log.' },

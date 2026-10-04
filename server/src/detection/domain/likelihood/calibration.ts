@@ -4,6 +4,7 @@ export const CALIBRATION = {
   maxLogit: 3.5,
   // textes IA du corpus : 240 tokens max, pas d'extrapolation au-delà
   maxCalibratedTokens: 240,
+  maxTokens: 250,
   // seuil relevé sur texte court pour signaler au plus 5 % de textes humains
   caution: { offset: 1.5, perLogToken: 1.0, fromTokens: 30 },
 };
@@ -35,18 +36,18 @@ export interface Calibration extends Coefficients {
 }
 
 export const DEFAULT_CALIBRATION: Calibration = {
-  meanLogProb: { mean: -3.0495, sd: 0.8266, weight: 3.0691 },
-  logTokens: { mean: 4.1815, sd: 0.6126, weight: -1.0071 },
-  bias: -2.3673,
+  meanLogProb: { mean: -2.8994, sd: 0.8327, weight: 3.118 },
+  logTokens: { mean: 4.1803, sd: 0.6111, weight: -1.0039 },
+  bias: -2.4819,
   origin: 'origine',
   texts: { ai: 46, human: 348 },
   answers: 0,
   rates: [
     { tokens: 30, detected: 0.63, falsePositives: 0.05 },
-    { tokens: 50, detected: 0.78, falsePositives: 0.04 },
-    { tokens: 80, detected: 0.97, falsePositives: 0.05 },
-    { tokens: 120, detected: 0.91, falsePositives: 0.05 },
-    { tokens: 200, detected: 0.86, falsePositives: 0.02 },
+    { tokens: 50, detected: 0.8, falsePositives: 0.04 },
+    { tokens: 80, detected: 0.97, falsePositives: 0.04 },
+    { tokens: 120, detected: 0.96, falsePositives: 0.05 },
+    { tokens: 200, detected: 0.86, falsePositives: 0.01 },
   ],
   appliedAt: null,
 };

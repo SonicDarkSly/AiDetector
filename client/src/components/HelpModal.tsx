@@ -4,10 +4,10 @@ const { Paragraph, Title, Text } = Typography;
 
 const RATES = [
   { tokens: '30', detected: '63 %', fp: '5 %' },
-  { tokens: '50', detected: '78 %', fp: '4 %' },
-  { tokens: '80', detected: '97 %', fp: '5 %' },
-  { tokens: '120', detected: '91 %', fp: '5 %' },
-  { tokens: '200', detected: '86 %', fp: '2 %' },
+  { tokens: '50', detected: '80 %', fp: '4 %' },
+  { tokens: '80', detected: '97 %', fp: '4 %' },
+  { tokens: '120', detected: '96 %', fp: '5 %' },
+  { tokens: '200', detected: '86 %', fp: '1 %' },
 ];
 
 export function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -48,10 +48,10 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
 
       <Title level={5}>2. Modèle de langage</Title>
       <Paragraph>
-        Un petit modèle (Qwen2.5 1,5B, environ 1 Go, chargé à la demande) lit le texte et mesure, mot après
-        mot, à quel point chaque choix était probable. Un texte généré suit presque toujours les choix les
-        plus attendus ; un humain s'en écarte davantage. Le modèle ne génère rien, il mesure. Le score combine
-        la probabilité moyenne des mots et la longueur du texte, calibré sur{' '}
+        Un petit modèle (Qwen2.5 3B, environ 2 Go, chargé à la demande) lit le texte et mesure, mot après mot,
+        à quel point chaque choix était probable. Un texte généré suit presque toujours les choix les plus
+        attendus ; un humain s'en écarte davantage. Le modèle ne génère rien, il mesure. Le score combine la
+        probabilité moyenne des mots et la longueur du texte, calibré sur{' '}
         <Text strong>394 textes en français</Text> (46 générés par IA, 348 écrits par des humains avant 2022).
         Le seuil est réglé pour signaler à tort au plus 5 % des textes humains : sur un texte court, l'outil
         préfère rester neutre plutôt qu'accuser. Les textes IA du corpus viennent tous de Claude ; les taux ne
@@ -82,7 +82,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         longueur), jamais le texte. À partir de 20 réponses sur de la prose, le bouton « Détails » sous la
         zone de saisie propose un recalibrage : il montre les taux actuels et proposés, et le nombre de tes
         réponses bien classées par chacun. Rien n'est appliqué sans ton accord, et on peut revenir à la
-        calibration d'origine. Les taux du tableau ci-dessus sont ceux de la calibration d'origine.
+        calibration d'origine. Les taux du tableau ci-dessus sont ceux de la calibration d'origine. Une
+        réponse ne vaut que pour le modèle qui a fait la mesure.
       </Paragraph>
 
       <Title level={5}>3. Indices de style</Title>

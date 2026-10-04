@@ -78,8 +78,8 @@ export const LANGUAGE_LABELS = { fr: 'Français', en: 'Anglais', autre: 'Autre /
 
 export const MEASURED_RATES = [
   { tokens: 30, detected: 63, falsePositives: 5 },
-  { tokens: 50, detected: 78, falsePositives: 4 },
-  { tokens: 80, detected: 97, falsePositives: 5 },
-  { tokens: 120, detected: 91, falsePositives: 5 },
-  { tokens: 200, detected: 86, falsePositives: 2 },
+  { tokens: 50, detected: 80, falsePositives: 4 },
+  { tokens: 80, detected: 97, falsePositives: 4 },
+  { tokens: 120, detected: 96, falsePositives: 5 },
+  { tokens: 200, detected: 86, falsePositives: 1 },
 ];

@@ -12,9 +12,8 @@ Double-clic sur le lanceur de votre système :
 - Windows : `Lancer-MefIAnce-Windows.bat`
 - Linux : `Lancer-MefIAnce-Linux.sh`
 
-Au premier lancement, Node.js, les dépendances et le modèle d'analyse (environ 1 Go) sont installés
-automatiquement, ainsi que Qwen2.5 3B (1,9 Go), téléchargé pour évaluation mais pas encore utilisé.
-L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres appareils du réseau
+Au premier lancement, Node.js, les dépendances et le modèle d'analyse (environ 2 Go) sont installés
+automatiquement. L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres appareils du réseau
 local (adresse affichée dans la fenêtre du lanceur).
 
 En ligne de commande :
@@ -57,20 +56,22 @@ guide) : ils ne comptent alors que comme de faibles indices.
 
 ### Prévisibilité du texte
 
-Un petit modèle local (Qwen2.5 1,5B Instruct, Q4_K_M, GGUF via node-llama-cpp) mesure la probabilité de
-chaque mot. Il ne génère rien. Le score combine la log-probabilité moyenne et la longueur, calibré sur 394
-textes en français (46 générés par IA, 348 écrits par des humains avant 2022). Le seuil est réglé pour
-signaler à tort au plus 5 % des textes humains : sur un texte court, mieux vaut un résultat neutre qu'une
-fausse accusation. Les textes IA du corpus viennent tous de Claude ; les taux ne sont pas mesurés pour les
-autres assistants.
+Un petit modèle local (Qwen2.5 3B Instruct, Q4_K_M, environ 2 Go, GGUF via node-llama-cpp) mesure la
+probabilité de chaque mot, sur 250 tokens au plus. Il ne génère rien. Le score combine la
+log-probabilité moyenne et la longueur, calibré sur 394 textes en français (46 générés par IA, 348 écrits
+par des humains avant 2022). Le seuil est réglé pour signaler à tort au plus 5 % des textes humains : sur
+un texte court, mieux vaut un résultat neutre qu'une fausse accusation. Les textes IA du corpus viennent
+tous de Claude ; les taux ne sont pas mesurés pour les autres assistants. Sur le même corpus, Qwen2.5 3B
+fait un peu mieux que le 1,5B utilisé auparavant (par exemple 96 % contre 91 % de textes IA repérés à
+120 tokens).
 
 | Longueur (tokens) | Textes IA détectés | Textes humains signalés à tort |
 | ----------------- | ------------------ | ------------------------------ |
 | 30                | 63 %               | 5 %                            |
-| 50                | 78 %               | 4 %                            |
-| 80                | 97 %               | 5 %                            |
-| 120               | 91 %               | 5 %                            |
-| 200               | 86 %               | 2 %                            |
+| 50                | 80 %               | 4 %                            |
+| 80                | 97 %               | 4 %                            |
+| 120               | 96 %               | 5 %                            |
+| 200               | 86 %               | 1 %                            |
 
 Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Un résultat
 « peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
@@ -85,7 +86,9 @@ En bas du verdict, « Apprentissage » permet d'indiquer d'où vient vraiment un
 laquelle, ou humain). Seuls deux chiffres sont conservés dans `server/data/answers.json` : la prévisibilité
 moyenne et la longueur, jamais le texte. À partir de 20 réponses sur de la prose, l'application propose un
 recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses bien classées
-par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible. Les mesures du
+par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible. Une réponse
+ne vaut que pour le modèle qui a fait la mesure : après un changement de modèle, les anciennes ne
+comptent plus. Les mesures du
 corpus d'origine (sans les textes) sont dans `server/calibration-samples.json`.
 
 ### Code source

@@ -95,6 +95,7 @@ export interface Answer {
   tokens: number;
   meanLogProb: number;
   domain: 'prose' | 'technical' | 'verse';
+  model?: string;
   at: string;
 }
 
