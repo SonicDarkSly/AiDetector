@@ -13,7 +13,7 @@ import type {
 const MAX_TOKENS = 400;
 const CONTEXT_SIZE = 512;
 const TOP_K = 256;
-const IDLE_UNLOAD_MS = 5 * 60 * 1000;
+const IDLE_UNLOAD_MS = 2 * 60 * 1000;
 
 // node-llama-cpp est un module ESM : import() natif malgré la compilation en CommonJS
 const esmImport = new Function('s', 'return import(s)') as (s: string) => Promise<any>;

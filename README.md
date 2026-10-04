@@ -73,7 +73,7 @@ autres assistants.
 
 Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Un résultat
 « peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
-familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 5 minutes sans analyse.
+familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 2 minutes sans analyse.
 
 Le modèle n'est calibré que sur de la prose. Un poème ou un texte en vers (lignes courtes, rimes) est
 reconnu : sa mesure ne pousse jamais vers « humain ».
