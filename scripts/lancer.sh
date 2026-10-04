@@ -67,7 +67,7 @@ else
   echo "Dépendances déjà installées (node_modules complet)."
 fi
 
-echo "Préparation du modèle d'analyse (environ 1 Go, une seule fois)..."
+echo "Préparation des modèles d'analyse (1 Go, plus 1,9 Go pour Qwen2.5 3B en essai, une seule fois)..."
 if node scripts/warmup-model.mjs; then
   echo "Modèle d'analyse prêt."
 else

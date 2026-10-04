@@ -13,8 +13,9 @@ Double-clic sur le lanceur de votre système :
 - Linux : `Lancer-MefIAnce-Linux.sh`
 
 Au premier lancement, Node.js, les dépendances et le modèle d'analyse (environ 1 Go) sont installés
-automatiquement. L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres
-appareils du réseau local (adresse affichée dans la fenêtre du lanceur).
+automatiquement, ainsi que Qwen2.5 3B (1,9 Go), téléchargé pour évaluation mais pas encore utilisé.
+L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres appareils du réseau
+local (adresse affichée dans la fenêtre du lanceur).
 
 En ligne de commande :
 
