@@ -108,6 +108,8 @@ export default function App() {
         <InputPanel
           loading={analysis.loading}
           dark={dark}
+          reportId={report?.id ?? null}
+          reportLabel={report ? (report.source.filename ?? null) : null}
           onText={(t) => void analysis.analyzeText(t)}
           onFile={(f) => void analysis.analyzeFile(f)}
         />

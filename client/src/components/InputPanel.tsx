@@ -1,6 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button, Card, Flex, Input, Tabs, Typography, Upload } from 'antd';
-import { ClearOutlined, FileSearchOutlined, InboxOutlined, ScanOutlined } from '@ant-design/icons';
+import {
+  ClearOutlined,
+  FileSearchOutlined,
+  InboxOutlined,
+  PlusOutlined,
+  ScanOutlined,
+  UpOutlined,
+} from '@ant-design/icons';
 import { ACCEPT, IA_RING_GRADIENT } from '../constants';
 import { ModelBadge } from './ModelBadge';
 
@@ -10,12 +17,20 @@ const TAB_KEY = 'mefiance-input-tab';
 interface Props {
   loading: boolean;
   dark: boolean;
+  reportId: string | null;
+  reportLabel: string | null;
   onText: (text: string) => void;
   onFile: (file: File) => void;
 }
 
-export function InputPanel({ loading, dark, onText, onFile }: Props) {
+export function InputPanel({ loading, dark, reportId, reportLabel, onText, onFile }: Props) {
   const [text, setText] = useState('');
+  const [folded, setFolded] = useState(false);
+
+  // replié dès qu'un rapport s'affiche, pour laisser la place au résultat
+  useEffect(() => {
+    setFolded(reportId !== null);
+  }, [reportId]);
   const [tab, setTab] = useState(() => localStorage.getItem(TAB_KEY) ?? 'text');
   const words = text.match(/[\p{L}\p{N}][\p{L}\p{N}'’-]*/gu)?.length ?? 0;
 
@@ -95,38 +110,61 @@ export function InputPanel({ loading, dark, onText, onFile }: Props) {
           border: 'none',
           background: dark ? '#1c1a22' : undefined,
         }}
-        styles={{ body: { paddingTop: 4 } }}
+        styles={{ body: { paddingTop: folded ? 12 : 4, paddingBottom: folded ? 12 : undefined } }}
       >
-        <Tabs
-          activeKey={tab}
-          onChange={(k) => {
-            setTab(k);
-            localStorage.setItem(TAB_KEY, k);
-          }}
-          items={[
-            {
-              key: 'text',
-              label: (
-                <span>
-                  <ScanOutlined /> Coller un texte
-                </span>
-              ),
-              children: textTab,
-            },
-            {
-              key: 'file',
-              label: (
-                <span>
-                  <FileSearchOutlined /> Analyser un fichier
-                </span>
-              ),
-              children: fileTab,
-            },
-          ]}
-        />
-        <div className="model-footer">
-          <ModelBadge busy={loading} />
-        </div>
+        {folded ? (
+          <Flex justify="space-between" align="center" gap={12} wrap>
+            <Flex align="center" gap={8} style={{ minWidth: 0, flex: 1 }}>
+              <ScanOutlined style={{ color: '#7c3aed' }} />
+              <Text type="secondary" ellipsis style={{ fontSize: 13 }}>
+                Dernière analyse : <Text strong>{reportLabel ?? 'texte collé'}</Text>
+              </Text>
+            </Flex>
+            <Button type="primary" icon={<PlusOutlined />} onClick={() => setFolded(false)}>
+              Nouvelle analyse
+            </Button>
+          </Flex>
+        ) : (
+          <>
+            <Tabs
+              activeKey={tab}
+              onChange={(k) => {
+                setTab(k);
+                localStorage.setItem(TAB_KEY, k);
+              }}
+              tabBarExtraContent={
+                reportId ? (
+                  <Button type="text" size="small" icon={<UpOutlined />} onClick={() => setFolded(true)}>
+                    Replier
+                  </Button>
+                ) : null
+              }
+              items={[
+                {
+                  key: 'text',
+                  label: (
+                    <span>
+                      <ScanOutlined /> Coller un texte
+                    </span>
+                  ),
+                  children: textTab,
+                },
+                {
+                  key: 'file',
+                  label: (
+                    <span>
+                      <FileSearchOutlined /> Analyser un fichier
+                    </span>
+                  ),
+                  children: fileTab,
+                },
+              ]}
+            />
+            <div className="model-footer">
+              <ModelBadge busy={loading} />
+            </div>
+          </>
+        )}
       </Card>
     </div>
   );
