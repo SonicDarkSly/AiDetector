@@ -94,11 +94,16 @@ const MONTHS = 'Janvier Février Mars Avril Mai Juin Juillet Août Septembre Oct
 async function collectNews(manifest, target) {
   let got = manifest.filter((e) => e.genre === 'news').length;
   const seen = new Set(manifest.map((e) => e.title));
-  // catégories mensuelles de 2008 à 2021, dans le désordre, quelques articles par mois pour varier les sujets
-  const months = MONTHS.flatMap((m) =>
-    Array.from({ length: 14 }, (_, i) => `Catégorie:${m} ${2008 + i}`),
-  ).sort(() => Math.random() - 0.5);
-  for (const cmtitle of months) {
+  // articles rangés par jour (« Catégorie:3 mars 2015 ») : jours tirés au hasard de 2008 à 2021
+  const days = [];
+  for (let n = 0; n < 2000; n++) {
+    const year = 2008 + Math.floor(Math.random() * 14);
+    const day = 1 + Math.floor(Math.random() * 28);
+    days.push(
+      `Catégorie:${day === 1 ? '1er' : day} ${MONTHS[Math.floor(Math.random() * 12)].toLowerCase()} ${year}`,
+    );
+  }
+  for (const cmtitle of [...new Set(days)]) {
     if (got >= target) break;
     const list = await api('fr.wikinews.org', {
       action: 'query',
@@ -133,27 +138,39 @@ async function collectReviews(manifest, target) {
   for (const offset of offsets) {
     if (got >= target) break;
     const url = `https://datasets-server.huggingface.co/rows?dataset=tblard/allocine&config=allocine&split=test&offset=${offset}&length=100`;
-    const res = await fetch(url, { headers: { 'User-Agent': UA } });
-    if (!res.ok) continue;
-    const { rows } = await res.json();
+    let rows = [];
+    // Hugging Face limite aussi les clients anonymes : on patiente au lieu d'abandonner la page
+    for (let attempt = 0; attempt < 5 && rows.length === 0; attempt++) {
+      await sleep(attempt === 0 ? 1500 : 20000 * attempt);
+      const res = await fetch(url, { headers: { 'User-Agent': UA } });
+      if (res.ok) rows = (await res.json()).rows;
+    }
+    let taken = 0;
     for (const { row_idx, row } of rows) {
-      if (got >= target) break;
+      if (got >= target || taken >= 3) break;
       const text = row.review.trim();
-      // une seule par page pour varier les auteurs, et assez longue pour une mesure
       if (wordCount(text) < MIN_WORDS / 2 || wordCount(text) > MAX_WORDS) continue;
+      if (manifest.some((e) => e.title === `Allociné #${row_idx}`)) continue;
       await save(manifest, 'avis', text, {
         title: `Allociné #${row_idx}`,
         source: 'https://huggingface.co/datasets/tblard/allocine',
         date: 'avant 2020',
       });
       got++;
-      break;
+      taken++;
     }
   }
 }
 
 async function save(manifest, genre, text, meta) {
-  const id = `humain-${genre}-${String(manifest.filter((e) => e.genre === genre && e.label === 'humain').length + 1).padStart(3, '0')}`;
+  // numéro suivant le plus grand existant : des textes ont pu être retirés du corpus
+  const last = Math.max(
+    0,
+    ...manifest
+      .filter((e) => e.label === 'humain' && e.genre === genre)
+      .map((e) => Number(e.id.split('-').pop())),
+  );
+  const id = `humain-${genre}-${String(last + 1).padStart(3, '0')}`;
   const file = `humain/${genre}/${id}.txt`;
   await mkdir(`${CORPUS_DIR}/humain/${genre}`, { recursive: true });
   await writeFile(`${CORPUS_DIR}/${file}`, text);
