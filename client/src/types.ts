@@ -127,10 +127,20 @@ export interface CalibrationStatus {
 }
 
 export interface ModelActivity {
-  phase: 'loading' | 'measuring';
+  phase: 'loading' | 'observing' | 'measuring';
   model: string;
   tokens: number | null;
   since: number;
+  step: number;
+  steps: number;
+  models: ActiveModel[];
+  gpu: string | null;
+}
+
+export interface ActiveModel {
+  name: string;
+  role: 'performer' | 'observer';
+  sizeBytes: number | null;
 }
 
 export interface LanguageModelInfo {

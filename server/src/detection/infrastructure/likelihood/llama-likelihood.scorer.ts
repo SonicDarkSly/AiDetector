@@ -3,6 +3,7 @@ import { readFileSync, statSync } from 'node:fs';
 import { LLM_DIR, LLM_MODELS_FILE } from '../../../shared/config/paths.js';
 import { CALIBRATION } from '../../domain/likelihood/calibration.js';
 import type {
+  ActiveModel,
   LanguageModelInfo,
   LikelihoodMeasure,
   LikelihoodScorer,
@@ -24,6 +25,8 @@ interface Loaded {
   vocabulary: number;
   // observateur Binoculars (même modèle, version de base) ; absent s'il n'est pas téléchargé
   observer: any | null;
+  models: ActiveModel[];
+  gpu: string | null;
 }
 
 interface TokenOutput {
@@ -120,7 +123,22 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
 
   private async evaluate(text: string, lengths?: number[]): Promise<LikelihoodMeasure[]> {
     if (this.state !== 'ready') {
-      this.current = { phase: 'loading', model: this.modelName() ?? '', tokens: null, since: Date.now() };
+      const planned: ActiveModel[] = [
+        { name: this.modelName() ?? '', role: 'performer', sizeBytes: null },
+        ...observerUris()
+          .slice(0, 1)
+          .map((uri): ActiveModel => ({ name: modelName(uri), role: 'observer', sizeBytes: null })),
+      ];
+      this.current = {
+        phase: 'loading',
+        model: planned.map((m) => m.name).join(' + '),
+        tokens: null,
+        since: Date.now(),
+        step: 0,
+        steps: planned.length,
+        models: planned,
+        gpu: null,
+      };
     }
     const loaded = await this.load();
     if (!loaded) return [];
@@ -128,10 +146,33 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     const started = Date.now();
     const tokens: number[] = loaded.model.tokenize(text).slice(0, MAX_TOKENS);
     if (tokens.length < 8) return [];
-    this.current = { phase: 'measuring', model: loaded.name, tokens: tokens.length, since: Date.now() };
+    const steps = loaded.observer ? 2 : 1;
+    const observerModel = loaded.models.find((m) => m.role === 'observer');
+    if (loaded.observer && observerModel) {
+      this.current = {
+        phase: 'observing',
+        model: observerModel.name,
+        tokens: tokens.length,
+        since: Date.now(),
+        step: 1,
+        steps,
+        models: loaded.models,
+        gpu: loaded.gpu,
+      };
+    }
 
     // Binoculars : ce que le modèle de base attendait à chaque position (ses TOP_K tokens les plus probables)
     const observed = loaded.observer ? await observe(loaded.observer, tokens) : null;
+    this.current = {
+      phase: 'measuring',
+      model: loaded.name,
+      tokens: tokens.length,
+      since: Date.now(),
+      step: steps,
+      steps,
+      models: loaded.models,
+      gpu: loaded.gpu,
+    };
 
     const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE });
     try {
@@ -231,12 +272,32 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
         const llama = await nlc.getLlama();
         const model = await llama.loadModel({ modelPath: path });
         const name = modelName(uri);
-        const observer = await this.loadObserver(nlc, llama, model);
+        const loadedObserver = await this.loadObserver(nlc, llama, model);
+        const observer = loadedObserver?.model ?? null;
         this.state = 'ready';
         this.logger.log(
           `${name} chargé en ${((Date.now() - started) / 1000).toFixed(1)} s${observer ? ', avec son observateur Binoculars' : ''}`,
         );
-        return { model, name, vocabulary: model.fileInsights?.vocabularySize ?? 151_936, observer };
+        const models: ActiveModel[] = [
+          { name, role: 'performer', sizeBytes: fileSize(path) },
+          ...(loadedObserver
+            ? [
+                {
+                  name: loadedObserver.name,
+                  role: 'observer' as const,
+                  sizeBytes: fileSize(loadedObserver.path),
+                },
+              ]
+            : []),
+        ];
+        return {
+          model,
+          name,
+          vocabulary: model.fileInsights?.vocabularySize ?? 151_936,
+          observer,
+          models,
+          gpu: typeof llama.gpu === 'string' ? llama.gpu : null,
+        };
       } catch (err) {
         this.state = 'error';
         this.logger.error(`chargement impossible (${uri}) : ${err instanceof Error ? err.message : err}`);
@@ -249,13 +310,19 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
   }
 
   // modèle de base du même découpage ; sans lui, la décision repose sur les trois mesures seules
-  private async loadObserver(nlc: any, llama: any, performer: any): Promise<any | null> {
+  private async loadObserver(
+    nlc: any,
+    llama: any,
+    performer: any,
+  ): Promise<{ model: any; name: string; path: string } | null> {
     for (const uri of observerUris()) {
       try {
         const path = await nlc.resolveModelFile(uri, { directory: LLM_DIR, download: false, cli: false });
         const observer = await llama.loadModel({ modelPath: path });
         const probe = 'Le barrage de Bergerac est un ouvrage hydraulique construit sur la Dordogne.';
-        if (observer.tokenize(probe).join() === performer.tokenize(probe).join()) return observer;
+        if (observer.tokenize(probe).join() === performer.tokenize(probe).join()) {
+          return { model: observer, name: modelName(uri), path };
+        }
         this.logger.warn(`observateur Binoculars ignoré (${uri}) : découpage en tokens différent`);
         await observer.dispose();
       } catch {
@@ -366,6 +433,14 @@ function topWith(logits: Map<number, number>, actual: number): Map<number, numbe
   const own = logits.get(actual);
   if (own !== undefined) out.set(actual, own);
   return out;
+}
+
+function fileSize(path: string): number | null {
+  try {
+    return statSync(path).size;
+  } catch {
+    return null;
+  }
 }
 
 function modelName(uri: string): string {

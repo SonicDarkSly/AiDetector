@@ -34,8 +34,11 @@ export function useModelActivity(active: boolean): ModelActivity | null {
 }
 
 export function activityLabel(activity: ModelActivity): string {
-  if (activity.phase === 'loading') return 'Chargement du modèle en mémoire';
-  return activity.tokens
-    ? `Mesure de la prévisibilité sur ${activity.tokens} tokens`
-    : 'Mesure de la prévisibilité';
+  if (activity.phase === 'loading')
+    return activity.models.length > 1
+      ? 'Chargement des modèles en mémoire'
+      : 'Chargement du modèle en mémoire';
+  const on = activity.tokens ? ` sur ${activity.tokens} tokens` : '';
+  if (activity.phase === 'observing') return `Lecture par l'observateur Binoculars${on}`;
+  return `Mesure de la prévisibilité${on}`;
 }

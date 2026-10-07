@@ -476,21 +476,6 @@ body {
   line-height: 1.45;
 }
 
-.analysis-model {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 8px;
-  padding: 6px 12px;
-  border-radius: 8px;
-  font-size: 11.5px;
-  background: rgba(124, 58, 237, 0.08);
-  color: #7c3aed;
-}
-.analysis-overlay.dark .analysis-model {
-  background: rgba(167, 139, 250, 0.12);
-  color: #c4b5fd;
-}
 
 .report-disclaimer {
   margin-bottom: 16px;
@@ -499,4 +484,61 @@ body {
 }
 .ant-tooltip:has(.hl-tip) {
   max-width: 360px;
+}
+
+.analysis-models {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(420px, 80vw);
+  margin-top: 10px;
+}
+.analysis-model-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-align: left;
+  background: rgba(124, 58, 237, 0.06);
+  border: 1px solid rgba(124, 58, 237, 0.18);
+  transition: opacity 0.2s;
+}
+.analysis-model-row.waiting {
+  opacity: 0.55;
+}
+.analysis-model-row.done .analysis-model-state {
+  color: #52c41a;
+}
+.analysis-model-state {
+  width: 18px;
+  padding-top: 2px;
+  color: #7c3aed;
+  flex: none;
+}
+.analysis-model-name {
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.analysis-model-role {
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 6px;
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #7c3aed;
+  background: rgba(124, 58, 237, 0.1);
+}
+.analysis-model-task {
+  font-size: 11.5px;
+  opacity: 0.75;
+  margin-top: 2px;
+}
+.analysis-overlay.dark .analysis-model-row {
+  background: rgba(167, 139, 250, 0.08);
+  border-color: rgba(167, 139, 250, 0.22);
+}
+.analysis-overlay.dark .analysis-model-role {
+  color: #c4b5fd;
+  background: rgba(167, 139, 250, 0.14);
 }
