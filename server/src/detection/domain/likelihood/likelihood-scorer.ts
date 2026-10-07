@@ -32,6 +32,8 @@ export interface ActiveModel {
   name: string;
   role: 'performer' | 'observer';
   sizeBytes: number | null;
+  // avancement de l'étape en cours pour ce modèle, de 0 à 1
+  progress: number;
 }
 
 export interface LanguageModelInfo {

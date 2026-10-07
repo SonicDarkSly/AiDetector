@@ -14,6 +14,8 @@ import type {
 const MAX_TOKENS = CALIBRATION.maxTokens;
 const CONTEXT_SIZE = 512;
 const TOP_K = 256;
+// lots plus petits que le texte : l'avancement peut être suivi pendant la lecture
+const BATCH_SIZE = 64;
 const IDLE_UNLOAD_MS = 2 * 60 * 1000;
 
 // node-llama-cpp est un module ESM : import() natif malgré la compilation en CommonJS
@@ -124,10 +126,15 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
   private async evaluate(text: string, lengths?: number[]): Promise<LikelihoodMeasure[]> {
     if (this.state !== 'ready') {
       const planned: ActiveModel[] = [
-        { name: this.modelName() ?? '', role: 'performer', sizeBytes: null },
+        { name: this.modelName() ?? '', role: 'performer', sizeBytes: null, progress: 0 },
         ...observerUris()
           .slice(0, 1)
-          .map((uri): ActiveModel => ({ name: modelName(uri), role: 'observer', sizeBytes: null })),
+          .map((uri): ActiveModel => ({
+            name: modelName(uri),
+            role: 'observer',
+            sizeBytes: null,
+            progress: 0,
+          })),
       ];
       this.current = {
         phase: 'loading',
@@ -148,6 +155,11 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     if (tokens.length < 8) return [];
     const steps = loaded.observer ? 2 : 1;
     const observerModel = loaded.models.find((m) => m.role === 'observer');
+    const models = loaded.models.map((m) => ({ ...m, progress: 0 }));
+    const track = (role: ActiveModel['role']) => (done: number) => {
+      const model = models.find((m) => m.role === role);
+      if (model) model.progress = Math.min(1, done / Math.max(1, tokens.length - 1));
+    };
     if (loaded.observer && observerModel) {
       this.current = {
         phase: 'observing',
@@ -156,13 +168,14 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
         since: Date.now(),
         step: 1,
         steps,
-        models: loaded.models,
+        models,
         gpu: loaded.gpu,
       };
     }
 
     // Binoculars : ce que le modèle de base attendait à chaque position (ses TOP_K tokens les plus probables)
-    const observed = loaded.observer ? await observe(loaded.observer, tokens) : null;
+    const observed = loaded.observer ? await observe(loaded.observer, tokens, track('observer')) : null;
+    track('observer')(tokens.length);
     this.current = {
       phase: 'measuring',
       model: loaded.name,
@@ -170,11 +183,13 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
       since: Date.now(),
       step: steps,
       steps,
-      models: loaded.models,
+      models,
       gpu: loaded.gpu,
     };
 
-    const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE });
+    const measured = track('performer');
+    let done = 0;
+    const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE, batchSize: BATCH_SIZE });
     try {
       const sequence = context.getSequence();
       const input = tokens.map((token, i) =>
@@ -196,7 +211,9 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
             ]
           : token,
       );
-      const outputs: (TokenOutput | undefined)[] = await sequence.controlledEvaluate(input);
+      const outputs: (TokenOutput | undefined)[] = await sequence.controlledEvaluate(input, {
+        onTokenResult: () => measured(++done),
+      });
 
       const positions: { at: number; logProb: number; mean: number; variance: number }[] = [];
       const crossed: { at: number; logPpl: number; xPpl: number }[] = [];
@@ -270,7 +287,10 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
       try {
         const started = Date.now();
         const llama = await nlc.getLlama();
-        const model = await llama.loadModel({ modelPath: path });
+        const model = await llama.loadModel({
+          modelPath: path,
+          onLoadProgress: this.loadProgress('performer'),
+        });
         const name = modelName(uri);
         const loadedObserver = await this.loadObserver(nlc, llama, model);
         const observer = loadedObserver?.model ?? null;
@@ -279,13 +299,14 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
           `${name} chargé en ${((Date.now() - started) / 1000).toFixed(1)} s${observer ? ', avec son observateur Binoculars' : ''}`,
         );
         const models: ActiveModel[] = [
-          { name, role: 'performer', sizeBytes: fileSize(path) },
+          { name, role: 'performer', sizeBytes: fileSize(path), progress: 0 },
           ...(loadedObserver
             ? [
                 {
                   name: loadedObserver.name,
                   role: 'observer' as const,
                   sizeBytes: fileSize(loadedObserver.path),
+                  progress: 0,
                 },
               ]
             : []),
@@ -318,7 +339,10 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     for (const uri of observerUris()) {
       try {
         const path = await nlc.resolveModelFile(uri, { directory: LLM_DIR, download: false, cli: false });
-        const observer = await llama.loadModel({ modelPath: path });
+        const observer = await llama.loadModel({
+          modelPath: path,
+          onLoadProgress: this.loadProgress('observer'),
+        });
         const probe = 'Le barrage de Bergerac est un ouvrage hydraulique construit sur la Dordogne.';
         if (observer.tokenize(probe).join() === performer.tokenize(probe).join()) {
           return { model: observer, name: modelName(uri), path };
@@ -331,6 +355,13 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     }
     this.logger.warn('observateur Binoculars absent : décision sur les trois mesures (relancer le lanceur)');
     return null;
+  }
+
+  private loadProgress(role: ActiveModel['role']): (progress: number) => void {
+    return (progress) => {
+      const model = this.current?.models.find((m) => m.role === role);
+      if (model) model.progress = progress;
+    };
   }
 
   private scheduleUnload(): void {
@@ -379,8 +410,13 @@ interface Observed {
   top: Map<number, number>;
 }
 
-async function observe(observer: any, tokens: number[]): Promise<(Observed | null)[]> {
-  const context = await observer.createContext({ contextSize: CONTEXT_SIZE });
+async function observe(
+  observer: any,
+  tokens: number[],
+  onProgress: (done: number) => void,
+): Promise<(Observed | null)[]> {
+  const context = await observer.createContext({ contextSize: CONTEXT_SIZE, batchSize: BATCH_SIZE });
+  let done = 0;
   try {
     const input = tokens.map((token, i) =>
       i < tokens.length - 1
@@ -396,7 +432,9 @@ async function observe(observer: any, tokens: number[]): Promise<(Observed | nul
           ]
         : token,
     );
-    const outputs: (TokenOutput | undefined)[] = await context.getSequence().controlledEvaluate(input);
+    const outputs: (TokenOutput | undefined)[] = await context
+      .getSequence()
+      .controlledEvaluate(input, { onTokenResult: () => onProgress(++done) });
     return outputs.slice(0, tokens.length - 1).map((o) => {
       const next = o?.next;
       if (!next?.logits || !next.totalLogitWeight) return null;

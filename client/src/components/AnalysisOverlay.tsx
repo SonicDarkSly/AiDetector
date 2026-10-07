@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Spin, Typography } from 'antd';
+import { Progress, Spin, Typography } from 'antd';
 import { CheckCircleFilled, ClockCircleOutlined } from '@ant-design/icons';
 import { Logo } from './Logo';
 import { activityLabel, useModelActivity } from '../hooks/useModelActivity';
@@ -37,7 +37,11 @@ function roleOf(model: ActiveModel, binoculars: boolean): { title: string; task:
 }
 
 function stateOf(model: ActiveModel, activity: ModelActivity): 'busy' | 'done' | 'waiting' {
-  if (activity.phase === 'loading') return 'busy';
+  // chargement : le modèle de mesure d'abord, puis l'observateur
+  if (activity.phase === 'loading') {
+    if (model.progress >= 1) return 'done';
+    return model.progress > 0 || model.role === 'performer' ? 'busy' : 'waiting';
+  }
   if (activity.phase === 'observing') return model.role === 'observer' ? 'busy' : 'waiting';
   return model.role === 'observer' ? 'done' : 'busy';
 }
@@ -57,7 +61,7 @@ function ModelRow({ model, activity }: { model: ActiveModel; activity: ModelActi
           <ClockCircleOutlined />
         )}
       </span>
-      <div style={{ minWidth: 0 }}>
+      <div style={{ minWidth: 0, flex: 1 }}>
         <div className="analysis-model-name">
           {model.name}
           <span className="analysis-model-role">{title}</span>
@@ -66,6 +70,13 @@ function ModelRow({ model, activity }: { model: ActiveModel; activity: ModelActi
           {activity.phase === 'loading' ? 'Chargement en mémoire, quelques secondes au premier usage.' : task}
           {model.sizeBytes ? ` · ${gigabytes(model.sizeBytes)}\u00a0en\u00a0mémoire` : ''}
         </div>
+        <Progress
+          className="analysis-model-progress"
+          percent={state === 'done' ? 100 : Math.round(model.progress * 100)}
+          status={state === 'done' ? 'success' : state === 'busy' ? 'active' : 'normal'}
+          strokeColor={state === 'done' ? undefined : { from: '#b0179a', to: '#7c3aed' }}
+          size="small"
+        />
       </div>
     </div>
   );

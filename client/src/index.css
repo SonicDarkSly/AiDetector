@@ -548,3 +548,10 @@ body {
   color: #c4b5fd;
   background: rgba(167, 139, 250, 0.14);
 }
+
+.analysis-model-progress {
+  margin: 4px 0 0 !important;
+}
+.analysis-overlay.dark .analysis-model-progress .ant-progress-text {
+  color: rgba(255, 255, 255, 0.75);
+}

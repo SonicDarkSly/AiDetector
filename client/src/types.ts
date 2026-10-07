@@ -141,6 +141,7 @@ export interface ActiveModel {
   name: string;
   role: 'performer' | 'observer';
   sizeBytes: number | null;
+  progress: number;
 }
 
 export interface LanguageModelInfo {
