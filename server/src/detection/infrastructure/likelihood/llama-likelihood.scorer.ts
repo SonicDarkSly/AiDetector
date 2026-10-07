@@ -92,9 +92,14 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     return uri ? modelName(uri) : null;
   }
 
-  measure(text: string): Promise<LikelihoodMeasure | null> {
-    if (this.state === 'disabled') return Promise.resolve(null);
-    const run = this.queue.then(() => this.run(text));
+  async measure(text: string): Promise<LikelihoodMeasure | null> {
+    return (await this.measurePrefixes(text))[0] ?? null;
+  }
+
+  // mesures sur les premiers tokens du texte, en une seule passe (constitution du corpus de calibration)
+  measurePrefixes(text: string, lengths?: number[]): Promise<LikelihoodMeasure[]> {
+    if (this.state === 'disabled') return Promise.resolve([]);
+    const run = this.queue.then(() => this.run(text, lengths));
     this.queue = run.catch(() => undefined);
     return run;
   }
@@ -103,24 +108,24 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     await this.unload();
   }
 
-  private async run(text: string): Promise<LikelihoodMeasure | null> {
+  private async run(text: string, lengths?: number[]): Promise<LikelihoodMeasure[]> {
     try {
-      return await this.evaluate(text);
+      return await this.evaluate(text, lengths);
     } finally {
       this.current = null;
     }
   }
 
-  private async evaluate(text: string): Promise<LikelihoodMeasure | null> {
+  private async evaluate(text: string, lengths?: number[]): Promise<LikelihoodMeasure[]> {
     if (this.state !== 'ready') {
       this.current = { phase: 'loading', model: this.modelName() ?? '', tokens: null, since: Date.now() };
     }
     const loaded = await this.load();
-    if (!loaded) return null;
+    if (!loaded) return [];
     this.scheduleUnload();
     const started = Date.now();
     const tokens: number[] = loaded.model.tokenize(text).slice(0, MAX_TOKENS);
-    if (tokens.length < 8) return null;
+    if (tokens.length < 8) return [];
     this.current = { phase: 'measuring', model: loaded.name, tokens: tokens.length, since: Date.now() };
 
     const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE });
@@ -142,30 +147,41 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
       );
       const outputs: (TokenOutput | undefined)[] = await sequence.controlledEvaluate(input);
 
-      let logLikelihood = 0;
-      let expected = 0;
-      let variance = 0;
-      let counted = 0;
+      const positions: { at: number; logProb: number; mean: number; variance: number }[] = [];
       for (let i = 0; i < tokens.length - 1; i++) {
         const next = outputs[i]?.next;
         if (!next?.logits || !next.totalLogitWeight) continue;
         const stats = positionStats(next.logits, next.totalLogitWeight, tokens[i + 1], loaded.vocabulary);
-        if (!stats) continue;
-        logLikelihood += stats.logProb;
-        expected += stats.mean;
-        variance += stats.variance;
-        counted++;
+        if (stats) positions.push({ at: i, ...stats });
       }
-      if (counted === 0 || variance <= 0) return null;
+      const elapsedMs = Date.now() - started;
 
-      return {
-        model: loaded.name,
-        tokens: counted + 1,
-        meanLogProb: logLikelihood / counted,
-        meanEntropy: -expected / counted,
-        criterion: (logLikelihood - expected) / Math.sqrt(variance),
-        elapsedMs: Date.now() - started,
-      };
+      const measures: LikelihoodMeasure[] = [];
+      // un texte plus court que la longueur demandée est mesuré en entier, une seule fois
+      const sizes = [...new Set((lengths ?? [tokens.length]).map((l) => Math.min(l, tokens.length)))];
+      for (const length of sizes) {
+        let logLikelihood = 0;
+        let expected = 0;
+        let variance = 0;
+        let counted = 0;
+        for (const p of positions) {
+          if (p.at >= length - 1) break;
+          logLikelihood += p.logProb;
+          expected += p.mean;
+          variance += p.variance;
+          counted++;
+        }
+        if (counted === 0 || variance <= 0) continue;
+        measures.push({
+          model: loaded.name,
+          tokens: counted + 1,
+          meanLogProb: logLikelihood / counted,
+          meanEntropy: -expected / counted,
+          criterion: (logLikelihood - expected) / Math.sqrt(variance),
+          elapsedMs,
+        });
+      }
+      return measures;
     } finally {
       await context.dispose();
     }
