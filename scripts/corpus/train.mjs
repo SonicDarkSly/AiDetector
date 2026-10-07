@@ -2,6 +2,7 @@
 // Compare la calibration actuelle, la même formule réentraînée, et une formule à trois mesures
 // (prévisibilité, entropie, Fast-DetectGPT), par validation croisée regroupée par texte.
 // Usage : node scripts/corpus/train.mjs   (après measure.mjs)
+import { existsSync } from 'node:fs';
 import { readFile, writeFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { join } from 'node:path';
@@ -103,20 +104,38 @@ function thresholdAt5(inBucket, scores) {
 
 function flaggedAt5(rows, scores) {
   const thresholds = new Map(
-    BUCKETS.map((b) => [b, thresholdAt5(rows.filter((r) => bucketOf(r.tokens) === b), scores)]),
+    BUCKETS.map((b) => [
+      b,
+      thresholdAt5(
+        rows.filter((r) => bucketOf(r.tokens) === b),
+        scores,
+      ),
+    ]),
   );
   return (r) => scores.get(r) > thresholds.get(bucketOf(r.tokens));
 }
 
-const rows = JSON.parse(await readFile(MEASURES, 'utf8')).filter((r) => r.tokens >= CALIBRATION.minTokens);
+let rows = JSON.parse(await readFile(MEASURES, 'utf8')).filter((r) => r.tokens >= CALIBRATION.minTokens);
+
+// mesure Binoculars expérimentale (binoculars.mjs), jointe par texte et longueur mesurée
+const BINOCULARS = join(CORPUS_DIR, 'binoculars.json');
+if (existsSync(BINOCULARS)) {
+  const byId = Map.groupBy(JSON.parse(await readFile(BINOCULARS, 'utf8')), (b) => b.id);
+  for (const r of rows) {
+    const b = byId.get(r.id)?.find((m) => Math.abs(m.tokens - r.tokens) <= 2);
+    if (b) r.binoculars = b.binoculars;
+  }
+  // comparaison à données égales : seulement les textes déjà mesurés par Binoculars
+  rows = rows.filter((r) => r.binoculars !== undefined);
+  FEATURE_SETS['Binoculars seul'] = [(r) => r.binoculars, logTokens];
+  FEATURE_SETS['3 mesures + Binoculars'] = [...FEATURE_SETS['3 mesures'], (r) => r.binoculars];
+}
 const texts = (label) => new Set(rows.filter((r) => r.label === label).map((r) => r.id)).size;
 console.log(`${rows.length} mesures : ${texts('ia')} textes IA, ${texts('humain')} textes humains\n`);
 
 // la calibration actuelle applique déjà ses propres seuils : logit > 0 signifie « signalé »
 const results = {
-  'actuelle (non réentraînée)': new Map(
-    rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r)]),
-  ),
+  'actuelle (non réentraînée)': new Map(rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r)])),
 };
 for (const [name, features] of Object.entries(FEATURE_SETS)) results[name] = crossValidate(rows, features);
 
