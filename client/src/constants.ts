@@ -80,11 +80,11 @@ export const KIND_LABELS: Record<DocKind, string> = {
 
 export const LANGUAGE_LABELS = { fr: 'Français', en: 'Anglais', autre: 'Autre / indéterminée' };
 
-// calibration d'origine (240 textes Claude, ChatGPT, Gemini et Mistral, 400 textes humains), à garder égale à DEFAULT_CALIBRATION
+// règle d'origine : trois mesures sous 50 tokens, Binoculars au-delà (240 textes d'IA, 400 humains), à garder égale à DEFAULT_CALIBRATION
 export const MEASURED_RATES = [
   { tokens: 30, detected: 21, falsePositives: 5 },
-  { tokens: 50, detected: 22, falsePositives: 5 },
-  { tokens: 80, detected: 26, falsePositives: 5 },
-  { tokens: 120, detected: 24, falsePositives: 5 },
-  { tokens: 200, detected: 21, falsePositives: 5 },
+  { tokens: 50, detected: 24, falsePositives: 5 },
+  { tokens: 80, detected: 29, falsePositives: 5 },
+  { tokens: 120, detected: 29, falsePositives: 5 },
+  { tokens: 200, detected: 37, falsePositives: 5 },
 ];

@@ -1,11 +1,14 @@
 import type { Signal } from '../signal/signal.js';
 import {
   CALIBRATION,
-  FEATURES,
   activeCalibration,
   corpusLabel,
   featureValue,
+  formulaFor,
+  usesBinoculars,
+  type Calibration,
   type Coefficients,
+  type FeatureName,
   type Measures,
   type MeasuredRate,
   type Threshold,
@@ -15,9 +18,8 @@ import type { TextDomain } from '../text/genre.js';
 
 // score brut de la régression, avant le seuil propre à chaque longueur
 export function rawLogit(c: Pick<Coefficients, 'features' | 'bias'>, m: Measures): number {
-  return FEATURES.reduce((z, name) => {
-    const f = c.features[name];
-    return z + (f.weight * (featureValue(name, m) - f.mean)) / f.sd;
+  return Object.entries(c.features).reduce((z, [name, f]) => {
+    return z + (f.weight * (featureValue(name as FeatureName, m) - f.mean)) / f.sd;
   }, c.bias);
 }
 
@@ -35,9 +37,13 @@ export function offsetAt(thresholds: Threshold[], tokens: number): number {
 }
 
 // > 0 : au-delà de ce que 95 % des textes humains du corpus atteignent à cette longueur
-export function logitWith(c: Coefficients, m: Measures): number {
+export function scoreWith(c: Coefficients, m: Measures): number {
   const z = rawLogit(c, m) - offsetAt(c.thresholds, m.tokens);
   return Math.max(-CALIBRATION.maxLogit, Math.min(CALIBRATION.maxLogit, z));
+}
+
+export function logitWith(c: Calibration, m: Measures): number {
+  return scoreWith(formulaFor(c, m), m);
 }
 
 export function aiLogit(m: LikelihoodMeasure): number {
@@ -53,9 +59,12 @@ export function reliability(tokens: number): number {
   return Math.max(0, Math.min(1, (tokens - minTokens) / (fullReliabilityTokens - minTokens)));
 }
 
-export function measuredAt(tokens: number): MeasuredRate {
-  return activeCalibration().rates.reduce((best, m) =>
-    Math.abs(m.tokens - tokens) < Math.abs(best.tokens - tokens) ? m : best,
+// taux de la formule réellement utilisée pour ce texte
+export function measuredAt(m: Pick<Measures, 'tokens' | 'binoculars'>): MeasuredRate {
+  const c = activeCalibration();
+  const rates = usesBinoculars(c, m) && c.binoculars ? c.binoculars.rates : c.measures.rates;
+  return rates.reduce((best, r) =>
+    Math.abs(r.tokens - m.tokens) < Math.abs(best.tokens - m.tokens) ? r : best,
   );
 }
 
@@ -69,10 +78,14 @@ export function likelihoodSignal(m: LikelihoodMeasure, domain: TextDomain = 'pro
   const p = aiProbability(m);
   const r = reliability(m.tokens);
   const points = Math.max(-HUMAN_CAP[domain], Math.round(11 * r * aiLogit(m)));
-  const ref = measuredAt(m.tokens);
+  const ref = measuredAt(m);
+  const binoculars = usesBinoculars(activeCalibration(), m);
   const evidence = [
     `Modèle : ${m.model}, ${m.tokens} tokens en ${(m.elapsedMs / 1000).toFixed(1)} s`,
     `Log-probabilité moyenne : ${m.meanLogProb.toFixed(2)} · entropie moyenne : ${m.meanEntropy.toFixed(2)} · Fast-DetectGPT : ${m.criterion.toFixed(2)}`,
+    m.binoculars === undefined
+      ? 'Binoculars : non mesuré (modèle de base absent), décision sur les trois mesures'
+      : `Binoculars : ${m.binoculars.toFixed(3)} (bas = IA) · décision sur ${binoculars ? 'Binoculars' : `les trois mesures (texte de moins de ${CALIBRATION.binocularsFromTokens} tokens)`}`,
     `Mesuré vers ${ref.tokens} tokens : ${pct(ref.detected)} des textes IA détectés, ${pct(ref.falsePositives)} des textes humains signalés à tort`,
     `Corpus de calibration : ${corpusLabel()}`,
   ];

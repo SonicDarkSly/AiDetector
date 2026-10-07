@@ -4,6 +4,8 @@ export interface LikelihoodMeasure {
   meanLogProb: number;
   meanEntropy: number;
   criterion: number;
+  // score Binoculars (bas = IA) ; absent si le modèle de base n'est pas disponible
+  binoculars?: number;
   elapsedMs: number;
 }
 
@@ -42,6 +44,7 @@ export interface LanguageModelUsage {
   meanLogProb?: number;
   meanEntropy?: number;
   criterion?: number;
+  binoculars?: number;
   rate?: { tokens: number; detected: number; falsePositives: number };
 }
 

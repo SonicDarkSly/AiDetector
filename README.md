@@ -12,7 +12,7 @@ Double-clic sur le lanceur de votre système :
 - Windows : `Lancer-MefIAnce-Windows.bat`
 - Linux : `Lancer-MefIAnce-Linux.sh`
 
-Au premier lancement, Node.js, les dépendances et le modèle d'analyse (environ 2 Go) sont installés
+Au premier lancement, Node.js, les dépendances et les deux modèles d'analyse (environ 4 Go) sont installés
 automatiquement. L'application s'ouvre sur http://localhost:5174 et reste accessible depuis les autres appareils du réseau
 local (adresse affichée dans la fenêtre du lanceur).
 
@@ -57,38 +57,46 @@ guide) : ils ne comptent alors que comme de faibles indices.
 
 ### Prévisibilité du texte
 
-Un petit modèle local (Qwen2.5 3B Instruct, Q4_K_M, environ 2 Go, GGUF via node-llama-cpp) lit le texte,
-sur 250 tokens au plus, sans rien générer. Trois mesures sont combinées : la log-probabilité moyenne des
-mots, l'entropie moyenne (hésitation du modèle) et le critère Fast-DetectGPT, qui compare le texte à ce que
-le modèle aurait lui-même écrit.
+Deux petits modèles locaux, Qwen2.5 3B Instruct et sa version de base (Q4_K_M, environ 2 Go chacun, GGUF via
+node-llama-cpp), lisent le texte, sur 250 tokens au plus, sans rien générer. Ils sont chargés à la demande et
+libérés après 2 minutes sans analyse.
+
+- **À partir de 50 tokens : Binoculars** (Hans et al., 2024). Le score compare la surprise causée par le texte
+  à la surprise « normale » face à ce qu'un modèle aurait écrit à sa place : le modèle de base sert
+  d'observateur, le modèle Instruct d'exécutant. Un texte humain simplement formel n'est plus confondu avec un
+  texte généré.
+- **Sous 50 tokens : trois mesures** du modèle Instruct, combinées : la log-probabilité moyenne des mots,
+  l'entropie moyenne (hésitation du modèle) et le critère Fast-DetectGPT. Sur un texte aussi court,
+  Binoculars repère moins bien (10 % contre 21 % à 30 tokens).
+
+Sans le modèle de base (non téléchargé), l'application se replie sur les trois mesures à toutes les
+longueurs, avec des taux plus bas (21 à 26 %).
 
 Calibration sur 640 textes en français : 400 écrits par des humains avant 2022 (150 extraits de Wikipédia
 dans leur version de fin 2021, 100 articles Wikinews, 150 critiques Allociné) et 240 générés sur les mêmes
-sujets et genres par quatre assistants, 60 chacun : Claude (Sonnet et Opus), ChatGPT, Gemini et Mistral. Pour chaque longueur, le seuil est réglé pour ne
-signaler à tort que 5 % des textes humains ; les taux sont mesurés en validation croisée, sur des textes
-jamais vus à l'entraînement.
+sujets et genres par quatre assistants, 60 chacun : Claude (Sonnet et Opus), ChatGPT, Gemini et Mistral.
+Pour chaque longueur, le seuil est réglé pour ne signaler à tort que 5 % des textes humains ; les taux sont
+mesurés en validation croisée, sur des textes jamais vus à l'entraînement.
 
-| Longueur (tokens) | Textes IA repérés | Textes humains signalés à tort |
-| ----------------- | ----------------- | ------------------------------ |
-| 30                | 21 %              | 5 %                            |
-| 50                | 22 %              | 5 %                            |
-| 80                | 26 %              | 5 %                            |
-| 120               | 24 %              | 5 %                            |
-| 200               | 21 %              | 5 %                            |
+| Longueur (tokens) | Décision      | Textes IA repérés | Textes humains signalés à tort |
+| ----------------- | ------------- | ----------------- | ------------------------------ |
+| 30                | trois mesures | 21 %              | 5 %                            |
+| 50                | Binoculars    | 24 %              | 5 %                            |
+| 80                | Binoculars    | 29 %              | 5 %                            |
+| 120               | Binoculars    | 29 %              | 5 %                            |
+| 200               | Binoculars    | 37 %              | 5 %                            |
+
+Selon l'assistant, à partir de 80 tokens, Binoculars repère environ 12 % des textes de Gemini, 28 % de
+ChatGPT, 34 % de Claude et 53 % de Mistral. Les fausses alertes ne se concentrent plus sur Wikipédia :
+environ 7 % des extraits, 4 % des articles de presse et 3 % des critiques (contre 10 %, 2 % et 0 % avec les
+trois mesures seules).
 
 À ce niveau de prudence, la mesure peut **confirmer** une IA mais jamais innocenter un texte : sous le
-seuil, elle ne pousse presque pas vers « humain » et ne suffit pas à trancher. Les textes humains formels
-sont les plus difficiles : un modèle trouve un extrait de Wikipédia presque aussi prévisible qu'un texte
-généré (il en a lu pendant son entraînement). L'ancienne calibration (une seule mesure, 394 textes)
-signalait à tort 15 à 24 % des textes humains de ce corpus, et 39 % des extraits de Wikipédia. Selon
-l'assistant, à partir de 80 tokens, la mesure repère environ 16 % des textes de Gemini, 21 % de Claude, 24 %
-de ChatGPT et 32 % de Mistral ; les fausses alertes viennent surtout de Wikipédia (environ 10 % des extraits,
-contre 2 % des articles de presse et moins de 1 % des critiques).
+seuil, elle ne pousse presque pas vers « humain » et ne suffit pas à trancher.
 
-Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Le modèle
-est chargé à la demande et libéré après 2 minutes sans analyse. Il n'est calibré que sur de la prose : un
-poème ou un texte en vers (lignes courtes, rimes) est reconnu, et sa mesure ne pousse jamais vers
-« humain ».
+Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Les modèles ne
+sont calibrés que sur de la prose : un poème ou un texte en vers (lignes courtes, rimes) est reconnu, et sa
+mesure ne pousse jamais vers « humain ».
 
 ### Corpus de calibration
 
@@ -106,16 +114,17 @@ node scripts/corpus/fetch-human.mjs        # textes humains d'avant 2022
 node scripts/corpus/consignes.mjs          # consignes communes aux assistants (+ consignes.md)
 node scripts/corpus/import.mjs chatgpt lot1.txt   # réponse d'un assistant à un lot de consignes
 npm run build -w server
-node scripts/corpus/measure.mjs            # mesures du modèle, reprend là où il s'était arrêté
+node scripts/corpus/measure.mjs            # trois mesures du modèle Instruct, reprend là où il s'était arrêté
+node scripts/corpus/binoculars.mjs         # score Binoculars (base et Instruct), reprend aussi
 node scripts/corpus/train.mjs              # comparaison des calibrations
-node scripts/corpus/export.mjs             # server/calibration-samples.json et calibration d'origine
+node scripts/corpus/export.mjs             # server/calibration-samples.json, réécrit la calibration d'origine
 ```
 
 ### Apprentissage
 
 En bas du verdict, « Apprentissage » permet d'indiquer d'où vient vraiment un texte (IA, et
-laquelle, ou humain). Seules les trois mesures et la longueur sont conservées dans
-`server/data/answers.json`, jamais le texte. À partir de 20 réponses sur de la prose, l'application
+laquelle, ou humain). Seules les mesures (les trois mesures, le score Binoculars et la longueur) sont
+conservées dans `server/data/answers.json`, jamais le texte. À partir de 20 réponses sur de la prose, l'application
 propose un recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses
 bien classées par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible.
 Une réponse ne vaut que pour le modèle qui a fait la mesure ; les réponses données avant le passage aux
@@ -209,5 +218,5 @@ API : `POST /api/analyze/text`, `POST /api/analyze/file`, `GET /api/model`, `GET
 
 Les analyses sont conservées dans `server/data/reports` (200 au maximum).
 
-Variable d'environnement : `MEFIANCE_MODEL=off` désactive le modèle, `MEFIANCE_MODEL=<uri ou chemin>`
-en impose un autre.
+Variable d'environnement : `MEFIANCE_MODEL=off` désactive les modèles, `MEFIANCE_MODEL=<uri ou chemin>`
+en impose un autre (sans observateur Binoculars : décision sur les trois mesures).

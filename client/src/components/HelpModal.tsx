@@ -60,18 +60,20 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
 
       <Title level={5}>2. Modèle de langage</Title>
       <Paragraph>
-        Un petit modèle (Qwen2.5 3B, environ 2 Go, chargé à la demande) lit le texte et mesure, mot après mot,
-        à quel point chaque choix était probable. Le modèle ne génère rien, il mesure. Trois mesures sont
-        combinées : la probabilité moyenne des mots, l'hésitation du modèle (entropie) et le critère
-        Fast-DetectGPT, qui compare le texte à ce que le modèle aurait lui-même écrit. Calibration sur{' '}
+        Deux petits modèles (Qwen2.5 3B Instruct et sa version de base, environ 2 Go chacun, chargés à la
+        demande et libérés après 2 minutes sans analyse) lisent le texte et mesurent, mot après mot, à quel
+        point chaque choix était probable. Ils ne génèrent rien, ils mesurent. À partir de 50 tokens, la
+        décision repose sur la méthode <Text strong>Binoculars</Text> : le texte est-il plus prévisible que ce
+        qu'un modèle aurait lui-même écrit à sa place ? Elle ne pénalise plus les textes humains simplement
+        parce qu'ils sont formels. Sur un texte plus court, trois mesures du modèle Instruct sont combinées
+        (probabilité moyenne des mots, entropie, critère Fast-DetectGPT). Calibration sur{' '}
         <Text strong>640 textes en français</Text> : 400 écrits par des humains avant 2022 (Wikipédia,
         Wikinews, critiques Allociné) et 240 générés sur les mêmes sujets par Claude, ChatGPT, Gemini et
         Mistral. Pour chaque longueur, le seuil est réglé pour ne signaler à tort que{' '}
         <Text strong>5 % des textes humains</Text>. À ce niveau de prudence, la mesure ne repère qu'une partie
-        des textes d'IA (tableau ci-dessous) : elle peut confirmer une IA, jamais innocenter un texte. Les
-        textes humains très formels (encyclopédie, presse) sont les plus difficiles, car un modèle les trouve
-        aussi prévisibles qu'un texte généré. Selon l'assistant, la mesure repère de 16 % (Gemini) à 32 %
-        (Mistral) de ses textes.
+        des textes d'IA (tableau ci-dessous) : elle peut confirmer une IA, jamais innocenter un texte. Selon
+        l'assistant, à partir de 80 tokens, elle repère de 12 % (Gemini) à 53 % (Mistral) de ses textes. Sans
+        le modèle de base (non téléchargé), seules les trois mesures servent, avec des taux plus bas.
       </Paragraph>
       <Table
         size="small"

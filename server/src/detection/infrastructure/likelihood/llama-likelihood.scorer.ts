@@ -22,6 +22,8 @@ interface Loaded {
   model: any;
   name: string;
   vocabulary: number;
+  // observateur Binoculars (même modèle, version de base) ; absent s'il n'est pas téléchargé
+  observer: any | null;
 }
 
 interface TokenOutput {
@@ -128,6 +130,9 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     if (tokens.length < 8) return [];
     this.current = { phase: 'measuring', model: loaded.name, tokens: tokens.length, since: Date.now() };
 
+    // Binoculars : ce que le modèle de base attendait à chaque position (ses TOP_K tokens les plus probables)
+    const observed = loaded.observer ? await observe(loaded.observer, tokens) : null;
+
     const context = await loaded.model.createContext({ contextSize: CONTEXT_SIZE });
     try {
       const sequence = context.getSequence();
@@ -137,7 +142,12 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
               token,
               {
                 generateNext: {
-                  logits: { filter: { tokens: [tokens[i + 1]], includeTop: TOP_K } },
+                  logits: {
+                    filter: {
+                      tokens: [tokens[i + 1], ...(observed?.[i]?.top.keys() ?? [])],
+                      includeTop: TOP_K,
+                    },
+                  },
                   totalLogitWeight: true,
                   options: { temperature: 1, topK: 0, topP: 1, minP: 0 },
                 },
@@ -148,11 +158,17 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
       const outputs: (TokenOutput | undefined)[] = await sequence.controlledEvaluate(input);
 
       const positions: { at: number; logProb: number; mean: number; variance: number }[] = [];
+      const crossed: { at: number; logPpl: number; xPpl: number }[] = [];
       for (let i = 0; i < tokens.length - 1; i++) {
         const next = outputs[i]?.next;
         if (!next?.logits || !next.totalLogitWeight) continue;
-        const stats = positionStats(next.logits, next.totalLogitWeight, tokens[i + 1], loaded.vocabulary);
+        // les trois mesures ne voient que le top-K et le token écrit, comme lors de la calibration
+        const own = topWith(next.logits, tokens[i + 1]);
+        const stats = positionStats(own, next.totalLogitWeight, tokens[i + 1], loaded.vocabulary);
         if (stats) positions.push({ at: i, ...stats });
+        const seen = observed?.[i];
+        const cross = seen ? crossEntropy(seen, next.logits, next.totalLogitWeight) : null;
+        if (stats && cross !== null) crossed.push({ at: i, logPpl: -stats.logProb, xPpl: cross });
       }
       const elapsedMs = Date.now() - started;
 
@@ -172,12 +188,15 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
           counted++;
         }
         if (counted === 0 || variance <= 0) continue;
+        const kept = crossed.filter((c) => c.at < length - 1);
+        const mean = (key: 'logPpl' | 'xPpl') => kept.reduce((a, c) => a + c[key], 0) / kept.length;
         measures.push({
           model: loaded.name,
           tokens: counted + 1,
           meanLogProb: logLikelihood / counted,
           meanEntropy: -expected / counted,
           criterion: (logLikelihood - expected) / Math.sqrt(variance),
+          binoculars: kept.length ? mean('logPpl') / mean('xPpl') : undefined,
           elapsedMs,
         });
       }
@@ -212,9 +231,12 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
         const llama = await nlc.getLlama();
         const model = await llama.loadModel({ modelPath: path });
         const name = modelName(uri);
+        const observer = await this.loadObserver(nlc, llama, model);
         this.state = 'ready';
-        this.logger.log(`${name} chargé en ${((Date.now() - started) / 1000).toFixed(1)} s`);
-        return { model, name, vocabulary: model.fileInsights?.vocabularySize ?? 151_936 };
+        this.logger.log(
+          `${name} chargé en ${((Date.now() - started) / 1000).toFixed(1)} s${observer ? ', avec son observateur Binoculars' : ''}`,
+        );
+        return { model, name, vocabulary: model.fileInsights?.vocabularySize ?? 151_936, observer };
       } catch (err) {
         this.state = 'error';
         this.logger.error(`chargement impossible (${uri}) : ${err instanceof Error ? err.message : err}`);
@@ -223,6 +245,24 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     }
     this.state = 'missing';
     this.logger.warn('aucun modèle trouvé dans server/data/llm (lancer le lanceur pour le télécharger)');
+    return null;
+  }
+
+  // modèle de base du même découpage ; sans lui, la décision repose sur les trois mesures seules
+  private async loadObserver(nlc: any, llama: any, performer: any): Promise<any | null> {
+    for (const uri of observerUris()) {
+      try {
+        const path = await nlc.resolveModelFile(uri, { directory: LLM_DIR, download: false, cli: false });
+        const observer = await llama.loadModel({ modelPath: path });
+        const probe = 'Le barrage de Bergerac est un ouvrage hydraulique construit sur la Dordogne.';
+        if (observer.tokenize(probe).join() === performer.tokenize(probe).join()) return observer;
+        this.logger.warn(`observateur Binoculars ignoré (${uri}) : découpage en tokens différent`);
+        await observer.dispose();
+      } catch {
+        continue;
+      }
+    }
+    this.logger.warn('observateur Binoculars absent : décision sur les trois mesures (relancer le lanceur)');
     return null;
   }
 
@@ -239,6 +279,7 @@ export class LlamaLikelihoodScorer implements LikelihoodScorer, OnModuleDestroy 
     const loaded = await loading;
     if (!loaded) return;
     await this.queue;
+    await loaded.observer?.dispose();
     await loaded.model.dispose();
     this.state = 'idle';
     this.logger.log(`${loaded.name} libéré (inactif)`);
@@ -252,6 +293,79 @@ export function modelUris(): string[] {
   } catch {
     return [];
   }
+}
+
+export function observerUris(): string[] {
+  if (process.env.MEFIANCE_MODEL) return [];
+  try {
+    return (
+      (JSON.parse(readFileSync(LLM_MODELS_FILE, 'utf8')) as { binocularsObserver?: string[] })
+        .binocularsObserver ?? []
+    );
+  } catch {
+    return [];
+  }
+}
+
+interface Observed {
+  // probabilités de l'observateur sur ses TOP_K tokens, renormalisées
+  top: Map<number, number>;
+}
+
+async function observe(observer: any, tokens: number[]): Promise<(Observed | null)[]> {
+  const context = await observer.createContext({ contextSize: CONTEXT_SIZE });
+  try {
+    const input = tokens.map((token, i) =>
+      i < tokens.length - 1
+        ? [
+            token,
+            {
+              generateNext: {
+                logits: { filter: { includeTop: TOP_K } },
+                totalLogitWeight: true,
+                options: { temperature: 1, topK: 0, topP: 1, minP: 0 },
+              },
+            },
+          ]
+        : token,
+    );
+    const outputs: (TokenOutput | undefined)[] = await context.getSequence().controlledEvaluate(input);
+    return outputs.slice(0, tokens.length - 1).map((o) => {
+      const next = o?.next;
+      if (!next?.logits || !next.totalLogitWeight) return null;
+      const logZ = (next.logits.values().next().value ?? 0) + Math.log(next.totalLogitWeight);
+      const top = new Map([...next.logits].map(([token, logit]) => [token, Math.exp(logit - logZ)]));
+      const mass = [...top.values()].reduce((a, p) => a + p, 0);
+      for (const [token, p] of top) top.set(token, p / mass);
+      return { top };
+    });
+  } finally {
+    await context.dispose();
+  }
+}
+
+// -Σ p_observateur(v) · log p_exécutant(v), sur le top-K de l'observateur
+function crossEntropy(observed: Observed, logits: Map<number, number>, totalWeight: number): number | null {
+  const logZ = (logits.values().next().value ?? 0) + Math.log(totalWeight);
+  let cross = 0;
+  for (const [token, p] of observed.top) {
+    const logit = logits.get(token);
+    if (logit === undefined) return null;
+    cross -= p * (logit - logZ);
+  }
+  return cross;
+}
+
+// les TOP_K premiers logits (la Map est triée du plus grand au plus petit) et celui du token écrit
+function topWith(logits: Map<number, number>, actual: number): Map<number, number> {
+  const out = new Map<number, number>();
+  for (const [token, logit] of logits) {
+    if (out.size >= TOP_K) break;
+    out.set(token, logit);
+  }
+  const own = logits.get(actual);
+  if (own !== undefined) out.set(actual, own);
+  return out;
 }
 
 function modelName(uri: string): string {

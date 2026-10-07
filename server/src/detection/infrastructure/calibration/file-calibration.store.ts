@@ -27,8 +27,8 @@ export class FileCalibrationStore implements CalibrationStore, OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const saved = await this.saved();
-    // une calibration personnalisée de l'ancienne formule (une seule mesure) n'est plus applicable
-    if (saved && saved.version !== 2) {
+    // une calibration personnalisée d'une ancienne formule (avant Binoculars) n'est plus applicable
+    if (saved && saved.version !== 3) {
       this.logger.warn(
         "calibration personnalisée d'une ancienne version ignorée : calibration d'origine utilisée",
       );
@@ -41,18 +41,21 @@ export class FileCalibrationStore implements CalibrationStore, OnModuleInit {
 
   async baseSamples(): Promise<Sample[]> {
     if (!this.base) {
-      const file = await readJson<{ rows: [number, number, number, number, number, number][] }>(
-        CALIBRATION_SAMPLES_FILE,
+      const file = await readJson<{
+        rows: [number, number, number, number, number, number, number | null][];
+      }>(CALIBRATION_SAMPLES_FILE);
+      this.base = (file?.rows ?? []).map(
+        ([group, ai, tokens, meanLogProb, meanEntropy, criterion, binoculars]) => ({
+          group,
+          ai: ai === 1,
+          tokens,
+          meanLogProb,
+          meanEntropy,
+          criterion,
+          binoculars: binoculars ?? undefined,
+          weight: 1,
+        }),
       );
-      this.base = (file?.rows ?? []).map(([group, ai, tokens, meanLogProb, meanEntropy, criterion]) => ({
-        group,
-        ai: ai === 1,
-        tokens,
-        meanLogProb,
-        meanEntropy,
-        criterion,
-        weight: 1,
-      }));
     }
     return this.base;
   }

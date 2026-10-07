@@ -48,6 +48,7 @@ export class SetAnswerHandler implements ICommandHandler<SetAnswerCommand, Answe
       meanLogProb: usage.meanLogProb,
       meanEntropy: usage.meanEntropy,
       criterion: usage.criterion,
+      binoculars: usage.binoculars,
       domain: usage.domain ?? 'prose',
       model: usage.name ?? undefined,
       at: new Date().toISOString(),

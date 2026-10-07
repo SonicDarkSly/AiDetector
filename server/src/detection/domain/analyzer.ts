@@ -83,7 +83,8 @@ export class Analyzer {
           meanLogProb: measure.meanLogProb,
           meanEntropy: measure.meanEntropy,
           criterion: measure.criterion,
-          rate: measuredAt(measure.tokens),
+          binoculars: measure.binoculars,
+          rate: measuredAt(measure),
         };
       } else {
         signals.push(this.unavailable());

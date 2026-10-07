@@ -29,14 +29,15 @@ Allociné).
    ```
    Attendu au 7 octobre 2026 : 400 textes humains, 60 par assistant (claude, chatgpt, gemini, mistral).
 
-3. Vérifier que les mesures correspondent au modèle actuel : `node scripts/corpus/measure.mjs` après
-   `npm run build -w server`. Il annonce « 0 texte(s) à mesurer » si tout est à jour ; sinon il mesure ce
-   qui manque (il reprend là où il s'était arrêté).
+3. Vérifier que les mesures sont complètes, après `npm run build -w server` :
+   `node scripts/corpus/measure.mjs` puis `node scripts/corpus/binoculars.mjs`. Chacun annonce
+   « 0 texte(s) à mesurer » si tout est à jour ; sinon il mesure ce qui manque. `binoculars.mjs` télécharge
+   le modèle de base (environ 2 Go) s'il est absent.
 
 ## À savoir
 
 - Les textes humains peuvent être reconstruits depuis leurs sources avec `node scripts/corpus/fetch-human.mjs`,
   mais les sources en ligne évoluent : le sous-module reste la référence.
-- Le modèle de langage (`server/data/llm/*.gguf`) n'est pas dans le corpus : le lanceur de l'application le
-  télécharge.
+- Les modèles de langage (`server/data/llm/*.gguf`, Instruct et base, environ 2 Go chacun) ne sont pas dans
+  le corpus : le lanceur de l'application les télécharge (`scripts/warmup-model.mjs`).
 - Pour enregistrer des changements du corpus, utiliser le skill `corpus-git`.

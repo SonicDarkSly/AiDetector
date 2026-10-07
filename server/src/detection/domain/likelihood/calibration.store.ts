@@ -12,6 +12,8 @@ export interface Answer {
   // absentes des réponses données avant le passage aux trois mesures
   meanEntropy?: number;
   criterion?: number;
+  // absent si le modèle de base n'était pas disponible lors de l'analyse
+  binoculars?: number;
   domain: TextDomain;
   model?: string;
   at: string;

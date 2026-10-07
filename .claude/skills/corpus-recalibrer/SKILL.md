@@ -5,36 +5,39 @@ description: Mesure les nouveaux textes du corpus avec le modèle local, compare
 
 # Mesurer et recalibrer
 
-Le modèle de langage n'est jamais réentraîné : seule la calibration (poids des 4 mesures, biais, seuils par
-longueur) est recalculée. Le seuil est réglé pour ne signaler à tort que 5 % des textes humains.
+Les modèles de langage ne sont jamais réentraînés : seule la calibration est recalculée. Elle contient deux
+formules : `measures` (trois mesures du modèle Instruct, utilisée sous 50 tokens) et `binoculars` (score
+Binoculars, base + Instruct, utilisée à partir de 50 tokens). Chacune a ses poids, son biais et un seuil par
+longueur réglé pour ne signaler à tort que 5 % des textes humains.
 
 ## Étapes
 
-1. Compiler puis mesurer (reprend là où il s'était arrêté ; environ 2 s par texte) :
+1. Compiler puis mesurer (les deux scripts reprennent là où ils s'étaient arrêtés) :
    ```bash
    npm run build -w server
-   node scripts/corpus/measure.mjs
+   node scripts/corpus/measure.mjs      # trois mesures, environ 2 s par texte
+   node scripts/corpus/binoculars.mjs   # Binoculars, environ 7 s par texte (deux modèles)
    ```
-   Lancer en arrière-plan si plus de quelques dizaines de textes. Sauvegarder d'abord
-   `server/data/corpus/mesures.json` si on change de modèle.
+   Lancer en arrière-plan au-delà de quelques dizaines de textes (640 textes : environ 80 min pour
+   Binoculars). Sauvegarder d'abord `mesures.json` et `binoculars.json` si on change de modèle.
 2. Comparer les calibrations (validation croisée en 5 parts) :
    ```bash
    node scripts/corpus/train.mjs
    ```
-   Lire surtout la colonne « IA repérés à 5 % de fausses alertes », longueur par longueur, et la comparer à la
-   calibration actuelle. Donner aussi les taux **par assistant** (filtrer `mesures.json` sur `vendor`) : une
-   calibration qui marche pour Claude mais pas pour ChatGPT est un surapprentissage.
+   Chaque formule est évaluée avec un seuil par longueur à 5 % de fausses alertes : lire la colonne
+   « IA repérés » longueur par longueur, et les lignes **par assistant** et **par genre** (une calibration qui
+   marche pour Claude mais pas pour ChatGPT, ou qui accuse surtout Wikipédia, est un surapprentissage).
 3. Exporter :
    ```bash
    node scripts/corpus/export.mjs
+   npx prettier --write server/src/detection/domain/likelihood/calibration.ts
    ```
-   Il réécrit `server/calibration-samples.json` (mesures seules, jamais les textes) et affiche le bloc
-   `DEFAULT_CALIBRATION` à reporter dans `server/src/detection/domain/likelihood/calibration.ts`.
-4. Reporter les nouveaux taux à trois endroits, qui doivent rester identiques :
-   - `DEFAULT_CALIBRATION.rates` et `texts` dans `calibration.ts` ;
+   Il réécrit `server/calibration-samples.json` (mesures seules, jamais les textes) et **réécrit lui-même**
+   `DEFAULT_CALIBRATION` dans `calibration.ts`, puis affiche les taux de la règle complète.
+4. Reporter ces taux, qui doivent rester identiques partout :
    - `MEASURED_RATES` dans `client/src/constants.ts` ;
-   - le tableau et la description du corpus dans `README.md` (section « Prévisibilité du texte »).
-5. Tester avant de committer : `npm run build -w server` et la vérification de types complète du client
-   (`npx tsc --noEmit -p client` ou `vue-tsc`/build du client selon le script disponible). Ne jamais
+   - le texte d'aide `client/src/components/HelpModal.tsx` (taux par assistant) ;
+   - le tableau « Prévisibilité du texte » des README (`README.md`, `README.en.md`, `README.de.md`).
+5. Tester avant de committer : `npm run typecheck` (serveur et client) puis `npm run build`. Ne jamais
    annoncer « fait » sans cette preuve.
 6. Committer le code dans le dépôt principal (Michael confirme) et le corpus avec le skill `corpus-git`.

@@ -83,6 +83,7 @@ export interface LanguageModelUsage {
   meanLogProb?: number;
   meanEntropy?: number;
   criterion?: number;
+  binoculars?: number;
   rate?: MeasuredRate;
 }
 
@@ -99,6 +100,7 @@ export interface Answer {
   meanLogProb: number;
   meanEntropy?: number;
   criterion?: number;
+  binoculars?: number;
   domain: 'prose' | 'technical' | 'verse';
   model?: string;
   at: string;

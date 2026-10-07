@@ -52,7 +52,7 @@ call npm install
 echo [OK] Dependances installees.
 :depsok
 
-echo [2/4] Preparation du modele d'analyse (environ 2 Go, une seule fois)...
+echo [2/4] Preparation des modeles d'analyse (environ 4 Go, une seule fois)...
 call node scripts\warmup-model.mjs
 if errorlevel 1 (
   echo [!] Modele indisponible - l'analyse fonctionnera sans lui.

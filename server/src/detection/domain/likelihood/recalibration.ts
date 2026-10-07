@@ -1,12 +1,14 @@
 import {
+  BINOCULARS_FEATURES,
   CALIBRATION,
   DEFAULT_CALIBRATION,
-  FEATURES,
+  MEASURES_FEATURES,
   featureValue,
   type Calibration,
   type Coefficients,
   type Feature,
   type FeatureName,
+  type Formula,
   type Measures,
   type MeasuredRate,
   type Threshold,
@@ -27,12 +29,12 @@ const L2 = 0.01;
 
 type Weights = Pick<Coefficients, 'features' | 'bias'>;
 
-export function fitWeights(samples: Sample[]): Weights {
-  const k = FEATURES.length;
-  const raw = samples.map((s) => FEATURES.map((name) => featureValue(name, s)));
+export function fitWeights(samples: Sample[], names: FeatureName[]): Weights {
+  const k = names.length;
+  const raw = samples.map((s) => names.map((name) => featureValue(name, s)));
   const total = samples.reduce((a, s) => a + s.weight, 0);
-  const mean = FEATURES.map((_, j) => samples.reduce((a, s, i) => a + s.weight * raw[i][j], 0) / total);
-  const sd = FEATURES.map((_, j) =>
+  const mean = names.map((_, j) => samples.reduce((a, s, i) => a + s.weight * raw[i][j], 0) / total);
+  const sd = names.map((_, j) =>
     Math.sqrt(samples.reduce((a, s, i) => a + s.weight * (raw[i][j] - mean[j]) ** 2, 0) / total),
   );
   const x = raw.map((r) => r.map((v, j) => (v - mean[j]) / sd[j]));
@@ -58,8 +60,8 @@ export function fitWeights(samples: Sample[]): Weights {
     c -= LEARNING_RATE * (gc / n);
   }
   const features = Object.fromEntries(
-    FEATURES.map((name, j) => [name, { mean: mean[j], sd: sd[j], weight: b[j] }]),
-  ) as Record<FeatureName, Feature>;
+    names.map((name, j) => [name, { mean: mean[j], sd: sd[j], weight: b[j] }]),
+  ) as Partial<Record<FeatureName, Feature>>;
   return { features, bias: c };
 }
 
@@ -81,12 +83,15 @@ const bucketOf = (tokens: number) =>
   CALIBRATION.buckets.reduce((best, b) => (Math.abs(b - tokens) < Math.abs(best - tokens) ? b : best));
 
 // scores obtenus sur des textes jamais vus à l'entraînement (validation croisée regroupée par texte)
-function outOfFoldScores(samples: Sample[]): number[] {
+function outOfFoldScores(samples: Sample[], names: FeatureName[]): number[] {
   const groups = seededOrder([...new Set(samples.map((s) => s.group))]);
   const fold = new Map(groups.map((g, i) => [g, i % FOLDS]));
   const scores = new Array<number>(samples.length).fill(0);
   for (let f = 0; f < FOLDS; f++) {
-    const weights = fitWeights(samples.filter((s) => fold.get(s.group) !== f));
+    const weights = fitWeights(
+      samples.filter((s) => fold.get(s.group) !== f),
+      names,
+    );
     samples.forEach((s, i) => {
       if (fold.get(s.group) === f) scores[i] = rawLogit(weights, s);
     });
@@ -128,17 +133,43 @@ function ratesFor(samples: Sample[], flagged: boolean[]): MeasuredRate[] {
   });
 }
 
-// coefficients sur tout le corpus, seuils et taux tirés des scores de validation croisée
+// une formule : coefficients sur tous les textes, seuils et taux tirés des scores de validation croisée
+function calibrateFormula(samples: Sample[], names: FeatureName[]): { formula: Formula; flagged: boolean[] } {
+  const scores = outOfFoldScores(samples, names);
+  const thresholds = thresholdsFor(samples, scores);
+  const flagged = samples.map((s, i) => scores[i] - offsetAt(thresholds, s.tokens) > 0);
+  const coefficients: Coefficients = { ...fitWeights(samples, names), thresholds };
+  return { formula: { ...coefficients, rates: ratesFor(samples, flagged) }, flagged };
+}
+
+const usesBinocularsSample = (s: Measures) =>
+  s.binoculars !== undefined && s.tokens >= CALIBRATION.binocularsFromTokens;
+
+// trois mesures pour tous les textes, Binoculars pour ceux qui en ont la mesure ; décision de la règle complète
 export function calibrate(samples: Sample[]): {
-  coefficients: Coefficients;
+  measures: Formula;
+  binoculars: Formula | null;
   rates: MeasuredRate[];
   flagged: boolean[];
 } {
-  const scores = outOfFoldScores(samples);
-  const thresholds = thresholdsFor(samples, scores);
-  const flagged = samples.map((s, i) => scores[i] - offsetAt(thresholds, s.tokens) > 0);
+  const measures = calibrateFormula(samples, MEASURES_FEATURES);
+  const withBinoculars = samples.filter((s) => s.binoculars !== undefined);
+  if (withBinoculars.length === 0) {
+    return {
+      measures: measures.formula,
+      binoculars: null,
+      rates: measures.formula.rates,
+      flagged: measures.flagged,
+    };
+  }
+  const binoculars = calibrateFormula(withBinoculars, BINOCULARS_FEATURES);
+  const binocularsFlag = new Map(withBinoculars.map((s, i) => [s, binoculars.flagged[i]]));
+  const flagged = samples.map((s, i) =>
+    usesBinocularsSample(s) ? (binocularsFlag.get(s) ?? false) : measures.flagged[i],
+  );
   return {
-    coefficients: { ...fitWeights(samples), thresholds },
+    measures: measures.formula,
+    binoculars: binoculars.formula,
     rates: ratesFor(samples, flagged),
     flagged,
   };
@@ -185,16 +216,18 @@ export function propose(
     meanLogProb: a.meanLogProb,
     meanEntropy: a.meanEntropy ?? 0,
     criterion: a.criterion ?? 0,
+    binoculars: a.binoculars,
     weight: ANSWER_WEIGHT,
   }));
   const all = [...base, ...extra];
-  const { coefficients, rates, flagged } = calibrate(all);
+  const { measures, binoculars, rates, flagged } = calibrate(all);
   const correct = (hits: boolean[]) => extra.filter((s, i) => hits[i] === s.ai).length;
   const ai = usable.filter((a) => a.label === 'ai').length;
   return {
     calibration: {
-      version: 2,
-      ...coefficients,
+      version: 3,
+      measures,
+      binoculars,
       origin: 'personnalisée',
       texts: {
         ai: DEFAULT_CALIBRATION.texts.ai + ai,
