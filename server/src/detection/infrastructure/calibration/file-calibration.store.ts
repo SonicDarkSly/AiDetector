@@ -27,18 +27,30 @@ export class FileCalibrationStore implements CalibrationStore, OnModuleInit {
 
   async onModuleInit(): Promise<void> {
     const saved = await this.saved();
+    // une calibration personnalisée de l'ancienne formule (une seule mesure) n'est plus applicable
+    if (saved && saved.version !== 2) {
+      this.logger.warn(
+        "calibration personnalisée d'une ancienne version ignorée : calibration d'origine utilisée",
+      );
+      useCalibration(null);
+      return;
+    }
     useCalibration(saved);
     if (saved) this.logger.log(`calibration personnalisée active (${saved.answers} réponses)`);
   }
 
   async baseSamples(): Promise<Sample[]> {
     if (!this.base) {
-      const file = await readJson<{ rows: [number, number, number, number][] }>(CALIBRATION_SAMPLES_FILE);
-      this.base = (file?.rows ?? []).map(([group, ai, tokens, meanLogProb]) => ({
+      const file = await readJson<{ rows: [number, number, number, number, number, number][] }>(
+        CALIBRATION_SAMPLES_FILE,
+      );
+      this.base = (file?.rows ?? []).map(([group, ai, tokens, meanLogProb, meanEntropy, criterion]) => ({
         group,
         ai: ai === 1,
         tokens,
         meanLogProb,
+        meanEntropy,
+        criterion,
         weight: 1,
       }));
     }

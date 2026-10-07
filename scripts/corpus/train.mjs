@@ -66,11 +66,8 @@ function fit(rows, features) {
   return { mean, sd, weights: b, bias: c };
 }
 
-const logit = (model, features, r) =>
-  cautious(
-    features.reduce((a, f, j) => a + (model.weights[j] * (f(r) - model.mean[j])) / model.sd[j], model.bias),
-    r.tokens,
-  );
+const rawLogit = (model, features, r) =>
+  features.reduce((a, f, j) => a + (model.weights[j] * (f(r) - model.mean[j])) / model.sd[j], model.bias);
 
 function seededShuffle(items) {
   let state = 42;
@@ -86,34 +83,52 @@ function seededShuffle(items) {
 function crossValidate(rows, features) {
   const ids = seededShuffle([...new Set(rows.map((r) => r.id))]);
   const fold = new Map(ids.map((id, i) => [id, i % FOLDS]));
-  const flagged = new Map();
+  const scores = new Map();
   for (let f = 0; f < FOLDS; f++) {
     const model = fit(
       rows.filter((r) => fold.get(r.id) !== f),
       features,
     );
-    for (const r of rows) if (fold.get(r.id) === f) flagged.set(r, logit(model, features, r) > 0);
+    for (const r of rows) if (fold.get(r.id) === f) scores.set(r, rawLogit(model, features, r));
   }
-  return flagged;
+  return scores;
 }
 
 const bucketOf = (tokens) =>
   BUCKETS.reduce((best, b) => (Math.abs(b - tokens) < Math.abs(best - tokens) ? b : best));
 const pct = (hits, rows) => (rows.length ? `${Math.round((100 * hits) / rows.length)} %` : '-');
-const rate = (rows, flagged) => pct(rows.filter((r) => flagged.get(r)).length, rows);
+// seuil prudent de l'application : z > marge sur texte court
+const flaggedBy = (scores) => (r) => cautious(scores.get(r), r.tokens) > 0;
+const rate = (rows, isFlagged) => pct(rows.filter(isFlagged).length, rows);
+
+// taux de détection quand le seuil est placé pour ne signaler à tort que 5 % des humains de la tranche
+function detectionAt5(inBucket, scores) {
+  const human = inBucket
+    .filter((r) => r.label === 'humain')
+    .map((r) => scores.get(r))
+    .sort((a, b) => a - b);
+  if (!human.length) return '-';
+  const threshold = human[Math.min(human.length - 1, Math.floor(0.95 * human.length))];
+  return rate(
+    inBucket.filter((r) => r.label === 'ia'),
+    (r) => scores.get(r) > threshold,
+  );
+}
 
 const rows = JSON.parse(await readFile(MEASURES, 'utf8')).filter((r) => r.tokens >= CALIBRATION.minTokens);
 const texts = (label) => new Set(rows.filter((r) => r.label === label).map((r) => r.id)).size;
 console.log(`${rows.length} mesures : ${texts('ia')} textes IA, ${texts('humain')} textes humains\n`);
 
+// l'application applique déjà sa marge dans logitWith : on la neutralise pour le seuil prudent commun
 const results = {
   'actuelle (non réentraînée)': new Map(
-    rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r.meanLogProb, r.tokens) > 0]),
+    rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r.meanLogProb, r.tokens)]),
   ),
 };
 for (const [name, features] of Object.entries(FEATURE_SETS)) results[name] = crossValidate(rows, features);
 
-for (const [name, flagged] of Object.entries(results)) {
+for (const [name, scores] of Object.entries(results)) {
+  const flagged = name.startsWith('actuelle') ? (r) => scores.get(r) > 0 : flaggedBy(scores);
   console.log(`== ${name}`);
   console.table(
     BUCKETS.map((b) => {
@@ -128,6 +143,7 @@ for (const [name, flagged] of Object.entries(results)) {
           inBucket.filter((r) => r.label === 'humain'),
           flagged,
         ),
+        'IA repérés à 5 % de fausses alertes': detectionAt5(inBucket, scores),
       };
     }),
   );

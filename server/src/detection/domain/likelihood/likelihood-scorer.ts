@@ -40,6 +40,8 @@ export interface LanguageModelUsage {
   elapsedMs?: number;
   domain?: 'prose' | 'technical' | 'verse';
   meanLogProb?: number;
+  meanEntropy?: number;
+  criterion?: number;
   rate?: { tokens: number; detected: number; falsePositives: number };
 }
 

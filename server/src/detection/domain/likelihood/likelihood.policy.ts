@@ -1,33 +1,47 @@
 import type { Signal } from '../signal/signal.js';
 import {
   CALIBRATION,
+  FEATURES,
   activeCalibration,
   corpusLabel,
+  featureValue,
   type Coefficients,
+  type Measures,
   type MeasuredRate,
+  type Threshold,
 } from './calibration.js';
 import type { LikelihoodMeasure } from './likelihood-scorer.js';
 import type { TextDomain } from '../text/genre.js';
 
-export function logitWith(c: Coefficients, meanLogProb: number, tokens: number): number {
-  const { maxLogit, maxCalibratedTokens } = CALIBRATION;
-  const z =
-    c.bias +
-    (c.meanLogProb.weight * (meanLogProb - c.meanLogProb.mean)) / c.meanLogProb.sd +
-    (c.logTokens.weight * (Math.log(Math.min(tokens, maxCalibratedTokens)) - c.logTokens.mean)) /
-      c.logTokens.sd;
-  return Math.max(-maxLogit, Math.min(maxLogit, cautious(z, tokens)));
+// score brut de la régression, avant le seuil propre à chaque longueur
+export function rawLogit(c: Pick<Coefficients, 'features' | 'bias'>, m: Measures): number {
+  return FEATURES.reduce((z, name) => {
+    const f = c.features[name];
+    return z + (f.weight * (featureValue(name, m) - f.mean)) / f.sd;
+  }, c.bias);
+}
+
+// seuil interpolé (en log des tokens) entre les longueurs mesurées, constant au-delà
+export function offsetAt(thresholds: Threshold[], tokens: number): number {
+  if (thresholds.length === 0) return 0;
+  const sorted = [...thresholds].sort((a, b) => a.tokens - b.tokens);
+  if (tokens <= sorted[0].tokens) return sorted[0].offset;
+  const last = sorted[sorted.length - 1];
+  if (tokens >= last.tokens) return last.offset;
+  const i = sorted.findIndex((t) => t.tokens >= tokens);
+  const [a, b] = [sorted[i - 1], sorted[i]];
+  const t = (Math.log(tokens) - Math.log(a.tokens)) / (Math.log(b.tokens) - Math.log(a.tokens));
+  return a.offset + t * (b.offset - a.offset);
+}
+
+// > 0 : au-delà de ce que 95 % des textes humains du corpus atteignent à cette longueur
+export function logitWith(c: Coefficients, m: Measures): number {
+  const z = rawLogit(c, m) - offsetAt(c.thresholds, m.tokens);
+  return Math.max(-CALIBRATION.maxLogit, Math.min(CALIBRATION.maxLogit, z));
 }
 
 export function aiLogit(m: LikelihoodMeasure): number {
-  return logitWith(activeCalibration(), m.meanLogProb, m.tokens);
-}
-
-function cautious(z: number, tokens: number): number {
-  const { offset, perLogToken, fromTokens } = CALIBRATION.caution;
-  const margin = Math.max(0, offset - perLogToken * Math.log(Math.max(tokens, fromTokens) / fromTokens));
-  if (z <= 0) return z;
-  return Math.max(0, z - margin);
+  return logitWith(activeCalibration(), m);
 }
 
 export function aiProbability(m: LikelihoodMeasure): number {
@@ -45,8 +59,9 @@ export function measuredAt(tokens: number): MeasuredRate {
   );
 }
 
-// côté humain ce n'est qu'un indice : IA retouchée, texte technique, familier ou en vers sortent pareil
-const HUMAN_CAP: Record<TextDomain, number> = { prose: 15, technical: 5, verse: 0 };
+// côté humain ce n'est qu'un faible indice : avec un seuil à 5 % de fausses alertes, la plupart des
+// textes d'IA restent sous le seuil (retouchés, techniques, familiers ou en vers aussi)
+const HUMAN_CAP: Record<TextDomain, number> = { prose: 5, technical: 2, verse: 0 };
 
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 
@@ -95,10 +110,10 @@ export function likelihoodSignal(m: LikelihoodMeasure, domain: TextDomain = 'pro
     category: 'model',
     label: ia
       ? `Texte très prévisible pour un modèle de langage (${pct(p)})`
-      : `Texte peu prévisible pour un modèle de langage (${pct(p)})`,
+      : `Prévisibilité sous le seuil d'alerte (${pct(p)})`,
     detail: ia
-      ? "Les mots choisis sont nettement plus probables que ce qu'un humain écrit d'habitude : c'est la signature statistique d'un texte généré."
-      : "Les choix de mots sont moins attendus que ceux d'un texte généré : profil plutôt humain. Ce n'est qu'un indice : un texte d'IA retouché, très technique ou écrit dans un style familier peut aussi sortir ici.",
+      ? "Les mots choisis sont plus prévisibles que ceux de 95 % des textes humains du corpus à cette longueur : c'est la signature statistique d'un texte généré. Attention, un texte humain très formel (encyclopédie, presse) peut aussi s'en approcher."
+      : "Le texte n'atteint pas le seuil réglé pour ne signaler à tort que 5 % des textes humains. Cela ne prouve pas qu'un humain l'a écrit : la plupart des textes d'IA restent aussi sous ce seuil, surtout retouchés, techniques ou familiers.",
     strength: ia && extreme && r === 1 ? 'fort' : Math.abs(points) >= 8 ? 'moyen' : 'faible',
     direction: Math.abs(points) < 3 ? 'neutre' : ia ? 'ia' : 'humain',
     points,

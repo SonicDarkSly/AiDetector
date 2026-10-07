@@ -36,11 +36,18 @@ export class SetAnswerHandler implements ICommandHandler<SetAnswerCommand, Answe
     if (usage?.status !== 'used' || usage.meanLogProb === undefined || !usage.tokens) {
       throw new AnswerNotPossibleError("cette analyse n'a pas de mesure du modèle de langage");
     }
+    if (usage.meanEntropy === undefined || usage.criterion === undefined) {
+      throw new AnswerNotPossibleError(
+        'analyse faite avant la mise à jour de la mesure : relancez-la pour pouvoir répondre',
+      );
+    }
     const answer: Answer = {
       label,
       vendor: label === 'ai' ? vendor : null,
       tokens: usage.tokens,
       meanLogProb: usage.meanLogProb,
+      meanEntropy: usage.meanEntropy,
+      criterion: usage.criterion,
       domain: usage.domain ?? 'prose',
       model: usage.name ?? undefined,
       at: new Date().toISOString(),

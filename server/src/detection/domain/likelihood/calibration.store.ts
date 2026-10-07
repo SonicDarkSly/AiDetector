@@ -9,6 +9,9 @@ export interface Answer {
   vendor: string | null;
   tokens: number;
   meanLogProb: number;
+  // absentes des réponses données avant le passage aux trois mesures
+  meanEntropy?: number;
+  criterion?: number;
   domain: TextDomain;
   model?: string;
   at: string;

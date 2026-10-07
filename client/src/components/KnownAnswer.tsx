@@ -80,8 +80,8 @@ export function KnownAnswer({ report }: { report: AnalysisReport }) {
   const content = (
     <Flex vertical gap={10} style={{ width: 300 }}>
       <Text type="secondary" style={{ fontSize: 12 }}>
-        Seulement si tu en es sûr. La réponse sert à recalibrer la mesure : seuls deux chiffres sont gardés
-        (prévisibilité moyenne et longueur), jamais le texte.
+        Seulement si tu en es sûr. La réponse sert à recalibrer la mesure : seules les trois mesures du modèle
+        et la longueur sont gardées, jamais le texte.
       </Text>
       <Radio.Group
         value={label}

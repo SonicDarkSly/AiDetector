@@ -80,10 +80,11 @@ export const KIND_LABELS: Record<DocKind, string> = {
 
 export const LANGUAGE_LABELS = { fr: 'Français', en: 'Anglais', autre: 'Autre / indéterminée' };
 
+// calibration d'origine (60 textes Claude, 400 textes humains), à garder égale à DEFAULT_CALIBRATION
 export const MEASURED_RATES = [
-  { tokens: 30, detected: 63, falsePositives: 5 },
-  { tokens: 50, detected: 80, falsePositives: 4 },
-  { tokens: 80, detected: 97, falsePositives: 4 },
-  { tokens: 120, detected: 96, falsePositives: 5 },
-  { tokens: 200, detected: 86, falsePositives: 1 },
+  { tokens: 30, detected: 13, falsePositives: 5 },
+  { tokens: 50, detected: 18, falsePositives: 5 },
+  { tokens: 80, detected: 28, falsePositives: 5 },
+  { tokens: 120, detected: 22, falsePositives: 5 },
+  { tokens: 200, detected: 27, falsePositives: 5 },
 ];

@@ -1,14 +1,13 @@
 import { Modal, Table, Typography } from 'antd';
+import { MEASURED_RATES } from '../constants';
 
 const { Paragraph, Title, Text } = Typography;
 
-const RATES = [
-  { tokens: '30', detected: '63 %', fp: '5 %' },
-  { tokens: '50', detected: '80 %', fp: '4 %' },
-  { tokens: '80', detected: '97 %', fp: '4 %' },
-  { tokens: '120', detected: '96 %', fp: '5 %' },
-  { tokens: '200', detected: '86 %', fp: '1 %' },
-];
+const RATES = MEASURED_RATES.map((r) => ({
+  tokens: String(r.tokens),
+  detected: `${r.detected} %`,
+  fp: `${r.falsePositives} %`,
+}));
 
 export function HelpModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   return (
@@ -62,14 +61,16 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
       <Title level={5}>2. Modèle de langage</Title>
       <Paragraph>
         Un petit modèle (Qwen2.5 3B, environ 2 Go, chargé à la demande) lit le texte et mesure, mot après mot,
-        à quel point chaque choix était probable. Un texte généré suit presque toujours les choix les plus
-        attendus ; un humain s'en écarte davantage. Le modèle ne génère rien, il mesure. Le score combine la
-        probabilité moyenne des mots et la longueur du texte, calibré sur{' '}
-        <Text strong>394 textes en français</Text> (46 générés par IA, 348 écrits par des humains avant 2022).
-        Le seuil est réglé pour signaler à tort au plus 5 % des textes humains : sur un texte court, l'outil
-        préfère rester neutre plutôt qu'accuser. Les textes IA du corpus viennent tous de Claude ; les taux ne
-        sont pas mesurés pour les autres assistants. Son nom et ses caractéristiques sont indiqués sous la
-        zone de saisie ; le verdict rappelle sa fiabilité pour la longueur du texte analysé.
+        à quel point chaque choix était probable. Le modèle ne génère rien, il mesure. Trois mesures sont
+        combinées : la probabilité moyenne des mots, l'hésitation du modèle (entropie) et le critère
+        Fast-DetectGPT, qui compare le texte à ce que le modèle aurait lui-même écrit. Calibration sur{' '}
+        <Text strong>460 textes en français</Text> : 400 écrits par des humains avant 2022 (Wikipédia,
+        Wikinews, critiques Allociné) et 60 générés par Claude sur les mêmes sujets. Pour chaque longueur, le
+        seuil est réglé pour ne signaler à tort que <Text strong>5 % des textes humains</Text>. À ce niveau de
+        prudence, la mesure ne repère qu'une partie des textes d'IA (tableau ci-dessous) : elle peut confirmer
+        une IA, jamais innocenter un texte. Les textes humains très formels (encyclopédie, presse) sont les
+        plus difficiles, car un modèle les trouve aussi prévisibles qu'un texte généré. Les taux ne sont pas
+        encore mesurés pour les autres assistants que Claude.
       </Paragraph>
       <Table
         size="small"
@@ -91,12 +92,12 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
       </Paragraph>
       <Paragraph>
         <Text strong>Apprentissage.</Text> En bas du verdict, « Apprentissage » permet d'indiquer d'où vient
-        vraiment un texte, quand tu le sais. Seuls deux chiffres sont gardés (prévisibilité moyenne et
-        longueur), jamais le texte. À partir de 20 réponses sur de la prose, le bouton « Détails » sous la
-        zone de saisie propose un recalibrage : il montre les taux actuels et proposés, et le nombre de tes
-        réponses bien classées par chacun. Rien n'est appliqué sans ton accord, et on peut revenir à la
-        calibration d'origine. Les taux du tableau ci-dessus sont ceux de la calibration d'origine. Une
-        réponse ne vaut que pour le modèle qui a fait la mesure.
+        vraiment un texte, quand tu le sais. Seules les trois mesures du modèle et la longueur sont gardées,
+        jamais le texte. À partir de 20 réponses sur de la prose, le bouton « Détails » sous la zone de saisie
+        propose un recalibrage : il montre les taux actuels et proposés, et le nombre de tes réponses bien
+        classées par chacun. Rien n'est appliqué sans ton accord, et on peut revenir à la calibration
+        d'origine. Les taux du tableau ci-dessus sont ceux de la calibration d'origine. Une réponse ne vaut
+        que pour le modèle qui a fait la mesure.
       </Paragraph>
 
       <Title level={5}>3. Indices de style</Title>

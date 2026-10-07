@@ -2,17 +2,48 @@ export const CALIBRATION = {
   minTokens: 20,
   fullReliabilityTokens: 60,
   maxLogit: 3.5,
-  // textes IA du corpus : 240 tokens max, pas d'extrapolation au-delà
+  // textes IA du corpus : 250 tokens max, pas d'extrapolation au-delà
   maxCalibratedTokens: 240,
   maxTokens: 250,
-  // seuil relevé sur texte court pour signaler au plus 5 % de textes humains
-  caution: { offset: 1.5, perLogToken: 1.0, fromTokens: 30 },
+  // seuil réglé par longueur pour signaler au plus 5 % des textes humains du corpus
+  falsePositiveTarget: 0.05,
+  buckets: [30, 50, 80, 120, 200],
 };
+
+// les trois mesures du modèle de langage, et la longueur sur laquelle elles portent
+export interface Measures {
+  tokens: number;
+  meanLogProb: number;
+  meanEntropy: number;
+  criterion: number;
+}
+
+export const FEATURES = ['meanLogProb', 'meanEntropy', 'criterionPerToken', 'logTokens'] as const;
+export type FeatureName = (typeof FEATURES)[number];
+
+export function featureValue(name: FeatureName, m: Measures): number {
+  switch (name) {
+    case 'meanLogProb':
+      return m.meanLogProb;
+    case 'meanEntropy':
+      return m.meanEntropy;
+    // le critère Fast-DetectGPT croît comme la racine de la longueur
+    case 'criterionPerToken':
+      return m.criterion / Math.sqrt(m.tokens);
+    case 'logTokens':
+      return Math.log(Math.min(m.tokens, CALIBRATION.maxCalibratedTokens));
+  }
+}
 
 export interface Feature {
   mean: number;
   sd: number;
   weight: number;
+}
+
+export interface Threshold {
+  tokens: number;
+  offset: number;
 }
 
 export interface MeasuredRate {
@@ -22,12 +53,13 @@ export interface MeasuredRate {
 }
 
 export interface Coefficients {
-  meanLogProb: Feature;
-  logTokens: Feature;
+  features: Record<FeatureName, Feature>;
   bias: number;
+  thresholds: Threshold[];
 }
 
 export interface Calibration extends Coefficients {
+  version: 2;
   origin: 'origine' | 'personnalisée';
   texts: { ai: number; human: number };
   answers: number;
@@ -35,19 +67,32 @@ export interface Calibration extends Coefficients {
   appliedAt: string | null;
 }
 
+// produit par scripts/corpus/export.mjs à partir de server/calibration-samples.json
 export const DEFAULT_CALIBRATION: Calibration = {
-  meanLogProb: { mean: -2.8994, sd: 0.8327, weight: 3.118 },
-  logTokens: { mean: 4.1803, sd: 0.6111, weight: -1.0039 },
-  bias: -2.4819,
+  version: 2,
+  features: {
+    meanLogProb: { mean: -2.4124, sd: 0.6663, weight: 0.4585 },
+    meanEntropy: { mean: 2.1877, sd: 0.5675, weight: -0.307 },
+    criterionPerToken: { mean: -0.0996, sd: 0.1331, weight: 0.868 },
+    logTokens: { mean: 4.4603, sd: 0.7106, weight: -0.166 },
+  },
+  bias: -0.4408,
+  thresholds: [
+    { tokens: 30, offset: 1.6236 },
+    { tokens: 50, offset: 1.4357 },
+    { tokens: 80, offset: 0.9908 },
+    { tokens: 120, offset: 0.9409 },
+    { tokens: 200, offset: 0.8211 },
+  ],
   origin: 'origine',
-  texts: { ai: 46, human: 348 },
+  texts: { ai: 60, human: 400 },
   answers: 0,
   rates: [
-    { tokens: 30, detected: 0.63, falsePositives: 0.05 },
-    { tokens: 50, detected: 0.8, falsePositives: 0.04 },
-    { tokens: 80, detected: 0.97, falsePositives: 0.04 },
-    { tokens: 120, detected: 0.96, falsePositives: 0.05 },
-    { tokens: 200, detected: 0.86, falsePositives: 0.01 },
+    { tokens: 30, detected: 0.13, falsePositives: 0.05 },
+    { tokens: 50, detected: 0.18, falsePositives: 0.05 },
+    { tokens: 80, detected: 0.28, falsePositives: 0.05 },
+    { tokens: 120, detected: 0.22, falsePositives: 0.05 },
+    { tokens: 200, detected: 0.27, falsePositives: 0.05 },
   ],
   appliedAt: null,
 };

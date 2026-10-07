@@ -81,6 +81,8 @@ export interface LanguageModelUsage {
   elapsedMs?: number;
   domain?: 'prose' | 'technical' | 'verse';
   meanLogProb?: number;
+  meanEntropy?: number;
+  criterion?: number;
   rate?: MeasuredRate;
 }
 
@@ -95,6 +97,8 @@ export interface Answer {
   vendor: string | null;
   tokens: number;
   meanLogProb: number;
+  meanEntropy?: number;
+  criterion?: number;
   domain: 'prose' | 'technical' | 'verse';
   model?: string;
   at: string;

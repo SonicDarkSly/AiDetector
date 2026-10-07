@@ -57,40 +57,61 @@ guide) : ils ne comptent alors que comme de faibles indices.
 
 ### Prévisibilité du texte
 
-Un petit modèle local (Qwen2.5 3B Instruct, Q4_K_M, environ 2 Go, GGUF via node-llama-cpp) mesure la
-probabilité de chaque mot, sur 250 tokens au plus. Il ne génère rien. Le score combine la
-log-probabilité moyenne et la longueur, calibré sur 394 textes en français (46 générés par IA, 348 écrits
-par des humains avant 2022). Le seuil est réglé pour signaler à tort au plus 5 % des textes humains : sur
-un texte court, mieux vaut un résultat neutre qu'une fausse accusation. Les textes IA du corpus viennent
-tous de Claude ; les taux ne sont pas mesurés pour les autres assistants. Sur le même corpus, Qwen2.5 3B
-fait un peu mieux que le 1,5B utilisé auparavant (par exemple 96 % contre 91 % de textes IA repérés à
-120 tokens).
+Un petit modèle local (Qwen2.5 3B Instruct, Q4_K_M, environ 2 Go, GGUF via node-llama-cpp) lit le texte,
+sur 250 tokens au plus, sans rien générer. Trois mesures sont combinées : la log-probabilité moyenne des
+mots, l'entropie moyenne (hésitation du modèle) et le critère Fast-DetectGPT, qui compare le texte à ce que
+le modèle aurait lui-même écrit.
 
-| Longueur (tokens) | Textes IA détectés | Textes humains signalés à tort |
-| ----------------- | ------------------ | ------------------------------ |
-| 30                | 63 %               | 5 %                            |
-| 50                | 80 %               | 4 %                            |
-| 80                | 97 %               | 4 %                            |
-| 120               | 96 %               | 5 %                            |
-| 200               | 86 %               | 1 %                            |
+Calibration sur 460 textes en français : 400 écrits par des humains avant 2022 (150 extraits de Wikipédia
+dans leur version de fin 2021, 100 articles Wikinews, 150 critiques Allociné) et 60 générés par Claude
+(Sonnet et Opus) sur les mêmes sujets et genres. Pour chaque longueur, le seuil est réglé pour ne
+signaler à tort que 5 % des textes humains ; les taux sont mesurés en validation croisée, sur des textes
+jamais vus à l'entraînement.
 
-Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Un résultat
-« peu prévisible » reste un indice limité : un texte d'IA retouché, très technique ou écrit dans un style
-familier peut aussi sortir ainsi. Le modèle est chargé à la demande et libéré après 2 minutes sans analyse.
+| Longueur (tokens) | Textes IA (Claude) repérés | Textes humains signalés à tort |
+| ----------------- | -------------------------- | ------------------------------ |
+| 30                | 13 %                       | 5 %                            |
+| 50                | 18 %                       | 5 %                            |
+| 80                | 28 %                       | 5 %                            |
+| 120               | 22 %                       | 5 %                            |
+| 200               | 27 %                       | 5 %                            |
 
-Le modèle n'est calibré que sur de la prose. Un poème ou un texte en vers (lignes courtes, rimes) est
-reconnu : sa mesure ne pousse jamais vers « humain ».
+À ce niveau de prudence, la mesure peut **confirmer** une IA mais jamais innocenter un texte : sous le
+seuil, elle ne pousse presque pas vers « humain » et ne suffit pas à trancher. Les textes humains formels
+sont les plus difficiles : un modèle trouve un extrait de Wikipédia presque aussi prévisible qu'un texte
+généré (il en a lu pendant son entraînement). L'ancienne calibration (une seule mesure, 394 textes)
+signalait à tort 15 à 24 % des textes humains de ce corpus, et 39 % des extraits de Wikipédia. Les taux ne
+sont pas encore mesurés pour les autres assistants que Claude.
+
+Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Le modèle
+est chargé à la demande et libéré après 2 minutes sans analyse. Il n'est calibré que sur de la prose : un
+poème ou un texte en vers (lignes courtes, rimes) est reconnu, et sa mesure ne pousse jamais vers
+« humain ».
+
+### Corpus de calibration
+
+Les scripts de `scripts/corpus/` reconstruisent le corpus (textes dans `server/data/corpus/`, hors git) :
+
+```bash
+node scripts/corpus/fetch-human.mjs        # textes humains d'avant 2022
+node scripts/corpus/consignes.mjs          # consignes communes aux assistants (+ consignes.md)
+node scripts/corpus/import.mjs chatgpt lot1.txt   # réponse d'un assistant à un lot de consignes
+npm run build -w server
+node scripts/corpus/measure.mjs            # mesures du modèle, reprend là où il s'était arrêté
+node scripts/corpus/train.mjs              # comparaison des calibrations
+node scripts/corpus/export.mjs             # server/calibration-samples.json et calibration d'origine
+```
 
 ### Apprentissage
 
 En bas du verdict, « Apprentissage » permet d'indiquer d'où vient vraiment un texte (IA, et
-laquelle, ou humain). Seuls deux chiffres sont conservés dans `server/data/answers.json` : la prévisibilité
-moyenne et la longueur, jamais le texte. À partir de 20 réponses sur de la prose, l'application propose un
-recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses bien classées
-par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible. Une réponse
-ne vaut que pour le modèle qui a fait la mesure : après un changement de modèle, les anciennes ne
-comptent plus. Les mesures du
-corpus d'origine (sans les textes) sont dans `server/calibration-samples.json`.
+laquelle, ou humain). Seules les trois mesures et la longueur sont conservées dans
+`server/data/answers.json`, jamais le texte. À partir de 20 réponses sur de la prose, l'application
+propose un recalibrage : taux actuels et proposés mesurés en validation croisée, et nombre de réponses
+bien classées par chacun. Rien n'est appliqué sans accord, et la calibration d'origine reste disponible.
+Une réponse ne vaut que pour le modèle qui a fait la mesure ; les réponses données avant le passage aux
+trois mesures ne comptent plus. Les mesures du corpus d'origine (sans les textes) sont dans
+`server/calibration-samples.json`.
 
 ### Projet entier (.zip)
 

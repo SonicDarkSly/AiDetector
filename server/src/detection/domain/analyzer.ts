@@ -81,6 +81,8 @@ export class Analyzer {
           elapsedMs: measure.elapsedMs,
           domain,
           meanLogProb: measure.meanLogProb,
+          meanEntropy: measure.meanEntropy,
+          criterion: measure.criterion,
           rate: measuredAt(measure.tokens),
         };
       } else {

@@ -52,7 +52,8 @@ export function evaluate(
   const strongTech = iaSignals.some((s) => s.strength === 'fort' && isTechnical(s));
   const mediumTech = iaSignals.some((s) => s.strength === 'moyen' && isTechnical(s));
   const anyIa = iaSignals.some((s) => s.points > 0);
-  const modelReliable = model !== null && model.reliability >= 0.5;
+  // seuil à 5 % de fausses alertes : la plupart des textes d'IA restent dessous, le modèle ne peut que confirmer
+  const modelReliable = model !== null && model.reliability >= 0.5 && model.probability >= 0.5;
 
   // rien trouvé ne veut pas dire humain : texte court sans trace = indéterminable
   const undetermined =
@@ -100,8 +101,7 @@ function confidence(
 ): Confidence {
   if (strongTech) return 'élevée';
   if (mediumTech) return 'moyenne';
-  if (model && model.reliability >= 0.9 && (model.probability > 0.9 || model.probability < 0.1))
-    return 'moyenne';
+  if (model && model.reliability >= 0.9 && model.probability > 0.9) return 'moyenne';
   if (words < 150) return 'faible';
   return styleScore >= 60 || styleScore <= 10 ? 'moyenne' : 'faible';
 }
@@ -132,7 +132,7 @@ function summarize(
   let summary = `${parts.join(', ')}.`;
   if (strongTech) {
     summary += ' Au moins une trace quasi certaine a été trouvée.';
-  } else if (model && model.reliability >= 0.5) {
+  } else if (model && model.reliability >= 0.5 && model.probability >= 0.5) {
     summary +=
       ' Sans trace technique, le verdict repose surtout sur la mesure statistique du modèle de langage : un indice solide sur un texte long, jamais une preuve.';
   } else if (!nTech) {
