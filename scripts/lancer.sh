@@ -57,7 +57,8 @@ if curl -s --max-time 2 http://localhost:$API_PORT/api/health | grep -q ok; then
 fi
 
 echo "Vérification des dépendances..."
-if [ ! -d node_modules ] || [ ! -e node_modules/.bin/vite ] || [ ! -e node_modules/.bin/tsc ] \
+if [ ! -d node_modules ] || [ package-lock.json -nt node_modules/.package-lock.json ] \
+   || [ ! -e node_modules/.bin/vite ] || [ ! -e node_modules/.bin/tsc ] \
    || [ ! -d node_modules/mammoth ] || [ ! -d node_modules/pdfjs-dist ] || [ ! -d node_modules/node-llama-cpp ] || [ ! -d node_modules/@dnd-kit/sortable ] \
    || ! node -e "require('rollup/dist/native.js'); require('esbuild').transformSync('1')" >/dev/null 2>&1; then
   echo "Dépendances manquantes ou incomplètes, installation (quelques minutes)..."

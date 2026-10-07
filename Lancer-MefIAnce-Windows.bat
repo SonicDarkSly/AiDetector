@@ -44,6 +44,7 @@ if not exist node_modules\mammoth goto installdeps
 if not exist node_modules\pdfjs-dist goto installdeps
 if not exist node_modules\node-llama-cpp goto installdeps
 if not exist node_modules\@dnd-kit\sortable goto installdeps
+if not exist node_modules\isomorphic-git goto installdeps
 echo [OK] Dependances deja installees - node_modules complet.
 goto depsok
 :installdeps
