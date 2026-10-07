@@ -2,11 +2,15 @@ node_modules/
 dist/
 *.log
 server/logs/
-server/data/
+server/data/*
+# corpus de calibration : sous-module privé MefIAnce-corpus
+!server/data/corpus
 Lancer-perso-macOS.command
 .DS_Store
 .env
 *.tsbuildinfo
 .node/
-.claude/
+.claude/*
+# skills du projet (manipulation du corpus), partagés
+!.claude/skills/
 CLAUDE.md

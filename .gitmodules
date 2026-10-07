@@ -1,0 +1,3 @@
+[submodule "server/data/corpus"]
+	path = server/data/corpus
+	url = https://github.com/SonicDarkSly/MefIAnce-corpus.git

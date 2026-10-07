@@ -30,13 +30,6 @@ const FEATURE_SETS = {
   ],
 };
 
-// même marge prudente que l'application sur texte court
-function cautious(z, tokens) {
-  const { offset, perLogToken, fromTokens } = CALIBRATION.caution;
-  const margin = Math.max(0, offset - perLogToken * Math.log(Math.max(tokens, fromTokens) / fromTokens));
-  return z <= 0 ? z : Math.max(0, z - margin);
-}
-
 function fit(rows, features) {
   const raw = rows.map((r) => features.map((f) => f(r)));
   const k = features.length;
@@ -97,38 +90,38 @@ function crossValidate(rows, features) {
 const bucketOf = (tokens) =>
   BUCKETS.reduce((best, b) => (Math.abs(b - tokens) < Math.abs(best - tokens) ? b : best));
 const pct = (hits, rows) => (rows.length ? `${Math.round((100 * hits) / rows.length)} %` : '-');
-// seuil prudent de l'application : z > marge sur texte court
-const flaggedBy = (scores) => (r) => cautious(scores.get(r), r.tokens) > 0;
 const rate = (rows, isFlagged) => pct(rows.filter(isFlagged).length, rows);
 
-// taux de détection quand le seuil est placé pour ne signaler à tort que 5 % des humains de la tranche
-function detectionAt5(inBucket, scores) {
+// seuil de la tranche placé pour ne signaler à tort que 5 % de ses textes humains, comme l'application
+function thresholdAt5(inBucket, scores) {
   const human = inBucket
     .filter((r) => r.label === 'humain')
     .map((r) => scores.get(r))
     .sort((a, b) => a - b);
-  if (!human.length) return '-';
-  const threshold = human[Math.min(human.length - 1, Math.floor(0.95 * human.length))];
-  return rate(
-    inBucket.filter((r) => r.label === 'ia'),
-    (r) => scores.get(r) > threshold,
+  return human.length ? human[Math.min(human.length - 1, Math.floor(0.95 * human.length))] : Infinity;
+}
+
+function flaggedAt5(rows, scores) {
+  const thresholds = new Map(
+    BUCKETS.map((b) => [b, thresholdAt5(rows.filter((r) => bucketOf(r.tokens) === b), scores)]),
   );
+  return (r) => scores.get(r) > thresholds.get(bucketOf(r.tokens));
 }
 
 const rows = JSON.parse(await readFile(MEASURES, 'utf8')).filter((r) => r.tokens >= CALIBRATION.minTokens);
 const texts = (label) => new Set(rows.filter((r) => r.label === label).map((r) => r.id)).size;
 console.log(`${rows.length} mesures : ${texts('ia')} textes IA, ${texts('humain')} textes humains\n`);
 
-// l'application applique déjà sa marge dans logitWith : on la neutralise pour le seuil prudent commun
+// la calibration actuelle applique déjà ses propres seuils : logit > 0 signifie « signalé »
 const results = {
   'actuelle (non réentraînée)': new Map(
-    rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r.meanLogProb, r.tokens)]),
+    rows.map((r) => [r, logitWith(DEFAULT_CALIBRATION, r)]),
   ),
 };
 for (const [name, features] of Object.entries(FEATURE_SETS)) results[name] = crossValidate(rows, features);
 
 for (const [name, scores] of Object.entries(results)) {
-  const flagged = name.startsWith('actuelle') ? (r) => scores.get(r) > 0 : flaggedBy(scores);
+  const flagged = name.startsWith('actuelle') ? (r) => scores.get(r) > 0 : flaggedAt5(rows, scores);
   console.log(`== ${name}`);
   console.table(
     BUCKETS.map((b) => {
@@ -143,7 +136,6 @@ for (const [name, scores] of Object.entries(results)) {
           inBucket.filter((r) => r.label === 'humain'),
           flagged,
         ),
-        'IA repérés à 5 % de fausses alertes': detectionAt5(inBucket, scores),
       };
     }),
   );

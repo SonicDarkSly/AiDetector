@@ -62,26 +62,28 @@ sur 250 tokens au plus, sans rien générer. Trois mesures sont combinées : la 
 mots, l'entropie moyenne (hésitation du modèle) et le critère Fast-DetectGPT, qui compare le texte à ce que
 le modèle aurait lui-même écrit.
 
-Calibration sur 460 textes en français : 400 écrits par des humains avant 2022 (150 extraits de Wikipédia
-dans leur version de fin 2021, 100 articles Wikinews, 150 critiques Allociné) et 60 générés par Claude
-(Sonnet et Opus) sur les mêmes sujets et genres. Pour chaque longueur, le seuil est réglé pour ne
+Calibration sur 640 textes en français : 400 écrits par des humains avant 2022 (150 extraits de Wikipédia
+dans leur version de fin 2021, 100 articles Wikinews, 150 critiques Allociné) et 240 générés sur les mêmes
+sujets et genres par quatre assistants, 60 chacun : Claude (Sonnet et Opus), ChatGPT, Gemini et Mistral. Pour chaque longueur, le seuil est réglé pour ne
 signaler à tort que 5 % des textes humains ; les taux sont mesurés en validation croisée, sur des textes
 jamais vus à l'entraînement.
 
-| Longueur (tokens) | Textes IA (Claude) repérés | Textes humains signalés à tort |
-| ----------------- | -------------------------- | ------------------------------ |
-| 30                | 13 %                       | 5 %                            |
-| 50                | 18 %                       | 5 %                            |
-| 80                | 28 %                       | 5 %                            |
-| 120               | 22 %                       | 5 %                            |
-| 200               | 27 %                       | 5 %                            |
+| Longueur (tokens) | Textes IA repérés | Textes humains signalés à tort |
+| ----------------- | ----------------- | ------------------------------ |
+| 30                | 21 %              | 5 %                            |
+| 50                | 22 %              | 5 %                            |
+| 80                | 26 %              | 5 %                            |
+| 120               | 24 %              | 5 %                            |
+| 200               | 21 %              | 5 %                            |
 
 À ce niveau de prudence, la mesure peut **confirmer** une IA mais jamais innocenter un texte : sous le
 seuil, elle ne pousse presque pas vers « humain » et ne suffit pas à trancher. Les textes humains formels
 sont les plus difficiles : un modèle trouve un extrait de Wikipédia presque aussi prévisible qu'un texte
 généré (il en a lu pendant son entraînement). L'ancienne calibration (une seule mesure, 394 textes)
-signalait à tort 15 à 24 % des textes humains de ce corpus, et 39 % des extraits de Wikipédia. Les taux ne
-sont pas encore mesurés pour les autres assistants que Claude.
+signalait à tort 15 à 24 % des textes humains de ce corpus, et 39 % des extraits de Wikipédia. Selon
+l'assistant, à partir de 80 tokens, la mesure repère environ 16 % des textes de Gemini, 21 % de Claude, 24 %
+de ChatGPT et 32 % de Mistral ; les fausses alertes viennent surtout de Wikipédia (environ 10 % des extraits,
+contre 2 % des articles de presse et moins de 1 % des critiques).
 
 Pour un PDF ou un Word, seule la prose est mesurée (sommaire, tableaux et code sont écartés). Le modèle
 est chargé à la demande et libéré après 2 minutes sans analyse. Il n'est calibré que sur de la prose : un
@@ -90,7 +92,12 @@ poème ou un texte en vers (lignes courtes, rimes) est reconnu, et sa mesure ne 
 
 ### Corpus de calibration
 
-Les scripts de `scripts/corpus/` reconstruisent le corpus (textes dans `server/data/corpus/`, hors git) :
+Les textes du corpus sont dans un dépôt privé, `MefIAnce-corpus`, branché comme sous-module sur
+`server/data/corpus/` (les licences des textes humains ne permettent pas de les publier ici). Pour le
+récupérer : `git submodule update --init server/data/corpus`. Les skills Claude Code du dossier
+`.claude/skills/` décrivent les manipulations (récupérer, ajouter un assistant, recalibrer, synchroniser).
+
+Les scripts de `scripts/corpus/` reconstruisent ou complètent le corpus :
 
 ```bash
 node scripts/corpus/fetch-human.mjs        # textes humains d'avant 2022

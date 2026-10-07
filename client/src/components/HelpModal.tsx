@@ -64,13 +64,14 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         à quel point chaque choix était probable. Le modèle ne génère rien, il mesure. Trois mesures sont
         combinées : la probabilité moyenne des mots, l'hésitation du modèle (entropie) et le critère
         Fast-DetectGPT, qui compare le texte à ce que le modèle aurait lui-même écrit. Calibration sur{' '}
-        <Text strong>460 textes en français</Text> : 400 écrits par des humains avant 2022 (Wikipédia,
-        Wikinews, critiques Allociné) et 60 générés par Claude sur les mêmes sujets. Pour chaque longueur, le
-        seuil est réglé pour ne signaler à tort que <Text strong>5 % des textes humains</Text>. À ce niveau de
-        prudence, la mesure ne repère qu'une partie des textes d'IA (tableau ci-dessous) : elle peut confirmer
-        une IA, jamais innocenter un texte. Les textes humains très formels (encyclopédie, presse) sont les
-        plus difficiles, car un modèle les trouve aussi prévisibles qu'un texte généré. Les taux ne sont pas
-        encore mesurés pour les autres assistants que Claude.
+        <Text strong>640 textes en français</Text> : 400 écrits par des humains avant 2022 (Wikipédia,
+        Wikinews, critiques Allociné) et 240 générés sur les mêmes sujets par Claude, ChatGPT, Gemini et
+        Mistral. Pour chaque longueur, le seuil est réglé pour ne signaler à tort que{' '}
+        <Text strong>5 % des textes humains</Text>. À ce niveau de prudence, la mesure ne repère qu'une partie
+        des textes d'IA (tableau ci-dessous) : elle peut confirmer une IA, jamais innocenter un texte. Les
+        textes humains très formels (encyclopédie, presse) sont les plus difficiles, car un modèle les trouve
+        aussi prévisibles qu'un texte généré. Selon l'assistant, la mesure repère de 16 % (Gemini) à 32 %
+        (Mistral) de ses textes.
       </Paragraph>
       <Table
         size="small"

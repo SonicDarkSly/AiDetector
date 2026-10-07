@@ -13,15 +13,17 @@ if (!VENDORS.includes(vendor) || !file) {
 }
 const prompts = new Map(JSON.parse(await readFile(PROMPTS, 'utf8')).map((p) => [p.id, p]));
 const manifest = existsSync(MANIFEST) ? JSON.parse(await readFile(MANIFEST, 'utf8')) : [];
-const raw = (await readFile(file, 'utf8')).replace(/\r\n?/g, '\n');
+// les assistants entourent parfois la réponse d'un bloc de code ou mettent les repères en gras
+const raw = (await readFile(file, 'utf8')).replace(/\r\n?/g, '\n').replace(/^```.*$/gm, '');
 
 let added = 0;
-for (const part of raw.split(/^\s*=====\s*/m).slice(1)) {
-  const id = part.match(/^(p\d+)/)?.[1];
+for (const part of raw.split(/^\s*(?:#+\s*)?(?:\*\*)?\s*=====\s*/m).slice(1)) {
+  const header = part.match(/^(p\d+)(?:[ \t]*\*\*)?/);
+  const id = header?.[1];
   const prompt = id && prompts.get(id);
   // retire le Markdown éventuel (titres, gras) : on ne garde que la prose
   const text = part
-    .slice(id?.length ?? 0)
+    .slice(header?.[0].length ?? 0)
     .replace(/^#+ .*$/gm, '')
     .replace(/\*\*(.+?)\*\*/g, '$1')
     .trim();
