@@ -57,6 +57,16 @@ const RULES: ArtefactRule[] = [
     vendors: [{ vendor: 'chatgpt', weight: 3 }],
   },
   {
+    id: 'art-oai-images',
+    re: /\bimages\.openai\.com\/(?:static-rsc-\d+|thumbnails)\/[^\s)\]"'>]+/g,
+    label: 'Images de la recherche web de ChatGPT (images.openai.com)',
+    detail:
+      "Quand ChatGPT illustre une réponse par des images trouvées sur le web, il les sert depuis images.openai.com. Copiées en Markdown, ces adresses restent dans le texte : signature quasi certaine d'une réponse ChatGPT.",
+    strength: 'fort',
+    points: 45,
+    vendors: [{ vendor: 'chatgpt', weight: 3 }],
+  },
+  {
     id: 'art-gemini-cite',
     re: /\[cite_start\]|\[cite:\s*[\d,\s-]+\]/g,
     label: 'Marqueurs [cite_start] / [cite: n] (Gemini)',
@@ -246,6 +256,7 @@ const HEAD_CHARS = 300;
 const SIGNATURE_RULES = new Set([
   'art-oaicite',
   'art-oai-brackets',
+  'art-oai-images',
   'art-citeturn',
   'art-gemini-cite',
   'art-claude-tags',

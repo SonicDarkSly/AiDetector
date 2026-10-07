@@ -41,15 +41,15 @@ Fiables quand elles existent, mais faciles à effacer.
   `Un-named` de la bibliothèque docx), temps d'édition, sessions Word (rsid), horloge en UTC.
 - **Traces de copier-coller**, propres à chaque assistant :
 
-  | Assistant | Marqueurs reconnus                                                                                             |
-  | --------- | -------------------------------------------------------------------------------------------------------------- |
-  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, caractères privés U+E200 |
-  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                    |
-  | Claude    | balises internes (`antArtifact`, `cite index`)                                                                 |
-  | DeepSeek  | `<think>`, `[citation:n]`                                                                                      |
-  | Copilot   | `[^n^]`                                                                                                        |
-  | Grok      | `<grok:render>`                                                                                                |
-  | Tous      | liens de partage, phrases d'introduction ou de conclusion de chatbot, `[Votre nom]`, Markdown brut             |
+  | Assistant | Marqueurs reconnus                                                                                                                         |
+  | --------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, images `images.openai.com`, caractères privés U+E200 |
+  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                                                |
+  | Claude    | balises internes (`antArtifact`, `cite index`)                                                                                             |
+  | DeepSeek  | `<think>`, `[citation:n]`                                                                                                                  |
+  | Copilot   | `[^n^]`                                                                                                                                    |
+  | Grok      | `<grok:render>`                                                                                                                            |
+  | Tous      | liens de partage, phrases d'introduction ou de conclusion de chatbot, `[Votre nom]`, Markdown brut                                         |
 
 - **Caractères cachés** : espaces de largeur nulle, message caché en caractères « tags » Unicode (décodé),
   lettres cyrilliques déguisées en lettres latines.

@@ -4,6 +4,8 @@ const HOMOGLYPH_TARGET = 'aeopcyxijshdqwABEKMHOPCTXIJSoavpiktuOABEIKMNTXZHPY';
 const HOMOGLYPHS = new Map([...HOMOGLYPH_SOURCE].map((c, i) => [c, HOMOGLYPH_TARGET[i]]));
 
 const REMOVALS: RegExp[] = [
+  // images de la recherche web de ChatGPT, copiées en Markdown : la ligne entière disparaît
+  /^[ \t]*!\[[^\]\n]*\]\(https?:\/\/images\.openai\.com\/[^)\s]+\)[ \t]*(?:\n[ \t]*(?=\n)|$)\n?/gm,
   /:?contentReference\[oaicite:\d+\](\{index=\d+\})?/g,
   /【\d+(?::\d+)?†[^】\n]{0,60}】/g,
   /\b(?:cite|filecite|navlist)?turn\d+(?:search|news|view|fetch|file|image|academia|forecast|finance|product)\d+\b/g,

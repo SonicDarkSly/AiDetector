@@ -25,6 +25,7 @@ const TAGS: Record<string, string> = {
   'art-oaicite': 'marqueur ChatGPT',
   'art-oai-brackets': 'marqueur ChatGPT',
   'art-citeturn': 'marqueur ChatGPT',
+  'art-oai-images': 'image ChatGPT',
   'uni-oai-pua': 'marqueur ChatGPT',
   'art-gemini-cite': 'marqueur Gemini',
   'art-claude-tags': 'balise Claude',

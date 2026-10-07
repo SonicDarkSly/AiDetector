@@ -45,15 +45,15 @@ Zuverlässig, wenn vorhanden, aber leicht zu entfernen.
   (`python-docx`, `Un-named` aus der docx-Bibliothek), Bearbeitungszeit, Word-Sitzungen (rsid), UTC-Uhrzeit.
 - **Spuren von Kopieren und Einfügen**, je nach Assistent:
 
-  | Assistent | Erkannte Markierungen                                                                                        |
-  | --------- | ------------------------------------------------------------------------------------------------------------ |
-  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, private Zeichen U+E200 |
-  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                  |
-  | Claude    | interne Tags (`antArtifact`, `cite index`)                                                                   |
-  | DeepSeek  | `<think>`, `[citation:n]`                                                                                    |
-  | Copilot   | `[^n^]`                                                                                                      |
-  | Grok      | `<grok:render>`                                                                                              |
-  | Alle      | Freigabelinks, typische Einleitungs- oder Schlusssätze von Chatbots, `[Ihr Name]`, rohes Markdown            |
+  | Assistent | Erkannte Markierungen                                                                                                                        |
+  | --------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, Bilder von `images.openai.com`, private Zeichen U+E200 |
+  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                                                  |
+  | Claude    | interne Tags (`antArtifact`, `cite index`)                                                                                                   |
+  | DeepSeek  | `<think>`, `[citation:n]`                                                                                                                    |
+  | Copilot   | `[^n^]`                                                                                                                                      |
+  | Grok      | `<grok:render>`                                                                                                                              |
+  | Alle      | Freigabelinks, typische Einleitungs- oder Schlusssätze von Chatbots, `[Ihr Name]`, rohes Markdown                                            |
 
 - **Versteckte Zeichen**: Leerzeichen ohne Breite, versteckte Nachrichten in Unicode-„Tag“-Zeichen
   (entschlüsselt), kyrillische Buchstaben, die als lateinische getarnt sind.

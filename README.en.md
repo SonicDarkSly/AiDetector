@@ -44,15 +44,15 @@ Reliable when present, but easy to erase.
   from the docx library), editing time, Word sessions (rsid), UTC clock.
 - **Copy-and-paste traces**, specific to each assistant:
 
-  | Assistant | Recognised markers                                                                                              |
-  | --------- | --------------------------------------------------------------------------------------------------------------- |
-  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, private characters U+E200 |
-  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                     |
-  | Claude    | internal tags (`antArtifact`, `cite index`)                                                                     |
-  | DeepSeek  | `<think>`, `[citation:n]`                                                                                       |
-  | Copilot   | `[^n^]`                                                                                                         |
-  | Grok      | `<grok:render>`                                                                                                 |
-  | All       | share links, chatbot opening or closing sentences, `[Your name]`, raw Markdown                                  |
+  | Assistant | Recognised markers                                                                                                                          |
+  | --------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+  | ChatGPT   | `contentReference[oaicite]`, `【n†source】`, `turn0search`, `utm_source=chatgpt.com`, `images.openai.com` images, private characters U+E200 |
+  | Gemini    | `[cite_start]`, `[cite: n]`                                                                                                                 |
+  | Claude    | internal tags (`antArtifact`, `cite index`)                                                                                                 |
+  | DeepSeek  | `<think>`, `[citation:n]`                                                                                                                   |
+  | Copilot   | `[^n^]`                                                                                                                                     |
+  | Grok      | `<grok:render>`                                                                                                                             |
+  | All       | share links, chatbot opening or closing sentences, `[Your name]`, raw Markdown                                                              |
 
 - **Hidden characters**: zero-width spaces, hidden messages in Unicode "tag" characters (decoded), Cyrillic
   letters disguised as Latin letters.
