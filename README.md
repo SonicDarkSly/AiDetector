@@ -92,10 +92,12 @@ poème ou un texte en vers (lignes courtes, rimes) est reconnu, et sa mesure ne 
 
 ### Corpus de calibration
 
-Les textes du corpus sont dans un dépôt privé, `MefIAnce-corpus`, branché comme sous-module sur
-`server/data/corpus/` (les licences des textes humains ne permettent pas de les publier ici). Pour le
-récupérer : `git submodule update --init server/data/corpus`. Les skills Claude Code du dossier
-`.claude/skills/` décrivent les manipulations (récupérer, ajouter un assistant, recalibrer, synchroniser).
+Les textes du corpus sont dans un dépôt privé,
+[SonicDarkSly/MefIAnce-corpus](https://github.com/SonicDarkSly/MefIAnce-corpus), branché comme sous-module
+sur `server/data/corpus/` (les licences des textes humains ne permettent pas de les publier ici). Pour le
+récupérer, avec un compte GitHub qui a accès à ce dépôt : `git submodule update --init server/data/corpus`.
+Les skills Claude Code du dossier `.claude/skills/` décrivent les manipulations (récupérer, ajouter un
+assistant, recalibrer, synchroniser).
 
 Les scripts de `scripts/corpus/` reconstruisent ou complètent le corpus :
 
