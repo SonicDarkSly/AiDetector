@@ -23,7 +23,8 @@ npm install
 npm run dev
 ```
 
-Formats acceptés : texte collé, PDF, Word (.docx), TXT, Markdown, code source (25 Mo au maximum).
+Formats acceptés : texte collé, PDF, Word (.docx), TXT, Markdown, code source (25 Mo au maximum), projet
+entier en .zip avec son dossier caché `.git` (100 Mo au maximum).
 
 ## Méthode
 
@@ -91,18 +92,53 @@ ne vaut que pour le modèle qui a fait la mesure : après un changement de modè
 comptent plus. Les mesures du
 corpus d'origine (sans les textes) sont dans `server/calibration-samples.json`.
 
+### Projet entier (.zip)
+
+Pour du code, les preuves les plus solides sont autour des fichiers, pas dedans. Une archive .zip d'un
+projet (dépendances, `dist`, `build`… ignorés) est analysée fichier par fichier, et on y cherche :
+
+- **fichiers de configuration d'assistants** : `CLAUDE.md`, `.claude/`, `AGENTS.md`, `GEMINI.md`,
+  `.cursorrules`, `.cursor/`, `.github/copilot-instructions.md`, `.windsurfrules`, `.clinerules`, `.aider*`,
+  `.kiro/`, `.junie/`… ;
+- **historiques de conversation** enregistrés (`.aider.chat.history.md`, `.specstory/`) ;
+- **commits signés par un assistant** dans l'historique git (1 000 derniers) : `Co-authored-by: Claude`,
+  « Generated with Claude Code », agent Copilot, Codex, Jules, Cursor, Aider, Devin. L'historique est lu
+  sans avoir besoin de git sur la machine (isomorphic-git).
+
+Ces traces prouvent qu'un assistant a servi dans le projet, pas quels fichiers il a écrits. Leur absence ne
+prouve rien : un assistant dans l'éditeur ou du code copié depuis un chat n'en laissent pas.
+
 ### Code source
 
 Le modèle de langage ne mesure pas le code. Les indices viennent des commentaires : typographie de
 rédaction impossible à taper au clavier (tirets longs, flèches, guillemets « », points de suspension),
 en-têtes de fichier « RÔLE — description », phrases de chatbot, placeholders (`YOUR_API_KEY`,
-`# Example usage`), émojis dans les logs. Mesuré sur 70 fichiers écrits par Claude et 225 fichiers de
+`# Example usage`), émojis dans les logs, commentaires qui répètent la ligne suivante (« // Récupère
+l'utilisateur » au-dessus de `getUser()`, indice faible : 0,2 % des fichiers signalés sur 1 719 fichiers de
+bibliothèques open source). Mesuré sur 70 fichiers écrits par Claude et 225 fichiers de
 bibliothèques open source : 54 fichiers IA sur 70 au-dessus de 50 %, aucun fichier humain.
 
 ### Style et rythme
 
 Vocabulaire sur-représenté, tournures récurrentes, tirets longs, régularité des phrases. Tendances
 seulement : le style seul ne dépasse pas environ 60 %.
+
+### Filigranes des éditeurs
+
+Pour répondre à l'article 50 du règlement européen sur l'IA, les éditeurs marquent les textes générés :
+
+| Assistant        | Depuis                                             | Vérification                              |
+| ---------------- | -------------------------------------------------- | ----------------------------------------- |
+| Claude           | 2 août 2026, modèles récents, dans le monde entier | interface d'Anthropic en accès restreint  |
+| ChatGPT et Codex | octobre 2026, Union européenne (« textGrain »)     | détecteur réservé à des chercheurs agréés |
+| Gemini           | 2024 (SynthID Text)                                | aucun service public pour le texte        |
+
+Ce n'est pas un caractère caché mais un léger biais statistique dans le choix des mots, calculé avec une
+clé secrète : seul l'éditeur peut le lire. L'application ne l'envoie pas vérifier. Elle affiche un indice
+d'information (sans effet sur le score) qui rappelle ce fonctionnement et indique si le texte serait assez
+long pour qu'un filigrane soit lisible : environ 80 % de détection à 200 tokens et 95 % à 400 selon OpenAI,
+pour 1 % de fausses alertes. Une réécriture, une traduction ou des retouches l'effacent ; il est faible sur
+le code. Son absence ne prouve pas qu'un humain a écrit le texte.
 
 ## Lire le résultat
 
@@ -122,7 +158,8 @@ seulement : le style seul ne dépasse pas environ 60 %.
 - Absence de trace ne veut pas dire humain : un texte d'IA retouché ou reformulé peut passer inaperçu.
 - Un humain au style très scolaire peut obtenir un score élevé. Ne jamais accuser quelqu'un sur un score.
 - Les métadonnées disparaissent quand on ré-enregistre, imprime ou capture le fichier.
-- Les filigranes invisibles (SynthID de Google) ne sont lisibles que par leur éditeur.
+- Les filigranes invisibles de Claude, ChatGPT et Gemini ne sont lisibles que par leur éditeur. Les caractères
+  invisibles repérés par l'application sont autre chose.
 
 ## Architecture
 

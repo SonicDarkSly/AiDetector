@@ -2,9 +2,10 @@ import type { SourceDocument } from '../document/source-document.js';
 import type { TextStats } from '../text/text-stats.js';
 import type { VendorHint } from './vendor.js';
 
-export type SignalCategory = 'metadata' | 'artefact' | 'unicode' | 'model' | 'style' | 'stats' | 'code';
+export type SignalCategory =
+  'project' | 'metadata' | 'artefact' | 'unicode' | 'model' | 'style' | 'stats' | 'code' | 'watermark';
 
-export const TECHNICAL_CATEGORIES: SignalCategory[] = ['metadata', 'artefact', 'unicode'];
+export const TECHNICAL_CATEGORIES: SignalCategory[] = ['project', 'metadata', 'artefact', 'unicode'];
 
 export type Strength = 'fort' | 'moyen' | 'faible' | 'info';
 

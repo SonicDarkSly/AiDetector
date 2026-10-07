@@ -73,8 +73,8 @@ export function InputPanel({ loading, dark, onText, onFile }: Props) {
         {loading ? 'Analyse en cours...' : 'Glissez un fichier ici ou cliquez pour le choisir'}
       </p>
       <Text type="secondary" style={{ fontSize: 12 }}>
-        PDF · Word (.docx) · TXT · Markdown · code source, 25 Mo max. Le fichier est analysé sur ce Mac et
-        n'est envoyé nulle part.
+        PDF · Word (.docx) · TXT · Markdown · code source (25 Mo max) · projet en .zip, avec son dossier .git
+        (100 Mo max). Le fichier est analysé sur ce Mac et n'est envoyé nulle part.
       </Text>
     </Upload.Dragger>
   );

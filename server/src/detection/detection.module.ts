@@ -22,9 +22,11 @@ import { Analyzer } from './domain/analyzer.js';
 import { ArtefactDetector } from './domain/detectors/artefact.detector.js';
 import { CodeDetector } from './domain/detectors/code.detector.js';
 import { MetadataDetector } from './domain/detectors/metadata.detector.js';
+import { ProjectDetector } from './domain/detectors/project.detector.js';
 import { StatsDetector } from './domain/detectors/stats.detector.js';
 import { StyleDetector } from './domain/detectors/style.detector.js';
 import { UnicodeDetector } from './domain/detectors/unicode.detector.js';
+import { WatermarkDetector } from './domain/detectors/watermark.detector.js';
 import { DOCUMENT_READER } from './domain/document/document-reader.js';
 import { LIKELIHOOD_SCORER, type LikelihoodScorer } from './domain/likelihood/likelihood-scorer.js';
 import { CALIBRATION_STORE } from './domain/likelihood/calibration.store.js';
@@ -45,12 +47,14 @@ import { AnalysisController } from './presentation/analysis.controller.js';
       useFactory: (scorer: LikelihoodScorer) =>
         new Analyzer(
           [
+            new ProjectDetector(),
             new MetadataDetector(),
             new ArtefactDetector(),
             new UnicodeDetector(),
             new CodeDetector(),
             new StyleDetector(),
             new StatsDetector(),
+            new WatermarkDetector(),
           ],
           scorer,
         ),

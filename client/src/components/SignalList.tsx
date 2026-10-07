@@ -1,6 +1,7 @@
 import { Card, Collapse, Empty, Flex, Tag, Tooltip, Typography, theme } from 'antd';
 import {
   BarChartOutlined,
+  BranchesOutlined,
   CodeOutlined,
   EditOutlined,
   ExperimentOutlined,
@@ -9,6 +10,7 @@ import {
   InfoCircleOutlined,
   MessageOutlined,
   RobotOutlined,
+  SafetyCertificateOutlined,
   UserOutlined,
 } from '@ant-design/icons';
 import type { CSSProperties, ReactNode } from 'react';
@@ -20,6 +22,7 @@ import { FoldChevron } from './FoldChevron';
 const { Text, Paragraph } = Typography;
 
 const CATEGORY_ICONS: Record<SignalCategory, ReactNode> = {
+  project: <BranchesOutlined />,
   metadata: <FileSearchOutlined />,
   artefact: <MessageOutlined />,
   unicode: <EyeInvisibleOutlined />,
@@ -27,10 +30,11 @@ const CATEGORY_ICONS: Record<SignalCategory, ReactNode> = {
   code: <CodeOutlined />,
   style: <EditOutlined />,
   stats: <BarChartOutlined />,
+  watermark: <SafetyCertificateOutlined />,
 };
 
-const TECHNICAL: SignalCategory[] = ['metadata', 'artefact', 'unicode'];
-const INDICATORS: SignalCategory[] = ['model', 'code', 'style', 'stats'];
+const TECHNICAL: SignalCategory[] = ['project', 'metadata', 'artefact', 'unicode'];
+const INDICATORS: SignalCategory[] = ['model', 'code', 'style', 'stats', 'watermark'];
 
 function DirectionIcon({ s }: { s: Signal }) {
   if (s.direction === 'ia')
@@ -212,6 +216,8 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
     );
   }
   const proofs = technical.filter((s) => s.direction === 'ia' && s.points > 0).length;
+  // le filigrane n'est qu'une information, pas un indice
+  const clues = indicators.filter((s) => s.category !== 'watermark').length;
   return (
     <Card
       size="small"
@@ -237,7 +243,7 @@ export function SignalList({ signals: all, mainOnly = false }: { signals: Signal
         <Section
           kind="indicators"
           title="Indices statistiques et de style"
-          extra={<Tag>{indicators.length} indice(s)</Tag>}
+          extra={clues > 0 && <Tag>{clues} indice(s)</Tag>}
         >
           <Groups signals={indicators} order={INDICATORS} />
         </Section>

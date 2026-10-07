@@ -39,6 +39,19 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             », « Souhaitez-vous que je… », [Votre nom]).
           </li>
           <li>
+            <Text strong>Projet entier (.zip)</Text> : fichiers de configuration d'assistants (CLAUDE.md,
+            AGENTS.md, .cursorrules, instructions Copilot…), historiques de conversation enregistrés, et
+            commits signés par un assistant dans l'historique git (« Co-authored-by: Claude », agent Copilot,
+            Cursor, Aider…). Incluez le dossier caché .git dans l'archive. Ces traces prouvent qu'un assistant
+            a servi, pas quels fichiers il a écrits.
+          </li>
+          <li>
+            <Text strong>Code source</Text> : typographie impossible à taper au clavier dans les commentaires,
+            en-têtes « RÔLE — description », placeholders (YOUR_API_KEY), et commentaires qui répètent la
+            ligne suivante (« // Récupère l'utilisateur » au-dessus de getUser()). Un fichier de code seul,
+            sans commentaires, reste le plus souvent indéterminable.
+          </li>
+          <li>
             <Text strong>Caractères cachés</Text> : espaces de largeur nulle, caractères privés des chatbots,
             message caché en caractères « tags » Unicode (décodé et affiché), lettres cyrilliques déguisées en
             lettres latines (signe d'un outil anti-détecteur).
@@ -95,6 +108,18 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
         %.
       </Paragraph>
 
+      <Title level={5}>4. Filigranes des éditeurs</Title>
+      <Paragraph>
+        Pour se conformer au règlement européen sur l'IA, les éditeurs marquent désormais les textes générés
+        par un filigrane invisible : Claude depuis le 2 août 2026 (dans le monde entier), ChatGPT et Codex à
+        partir d'octobre 2026 (dans l'Union européenne), Gemini avec SynthID depuis 2024. Ce filigrane n'est
+        pas un caractère caché : c'est un léger biais statistique dans le choix des mots, calculé avec une clé
+        secrète. Seul l'éditeur peut le lire, et ses services de vérification sont réservés (régulateurs,
+        médias, chercheurs, enseignement…). L'application ne peut donc pas le vérifier sans envoyer le texte :
+        le rapport indique seulement si le texte serait assez long pour qu'un filigrane soit lisible (environ
+        200 tokens au moins). Une réécriture ou une traduction l'effacent, et son absence ne prouve rien.
+      </Paragraph>
+
       <Title level={5}>Lire le rapport</Title>
       <Paragraph>
         <ul>
@@ -144,8 +169,8 @@ export function HelpModal({ open, onClose }: { open: boolean; onClose: () => voi
             le navigateur ne dit rien de son contenu.
           </li>
           <li>
-            Les filigranes invisibles (SynthID de Google, par exemple) ne sont lisibles que par leur éditeur :
-            l'application ne peut pas les vérifier.
+            Les filigranes invisibles de Claude, ChatGPT et Gemini ne sont lisibles que par leur éditeur :
+            l'application ne peut pas les vérifier. Les caractères invisibles qu'elle repère sont autre chose.
           </li>
         </ul>
       </Paragraph>

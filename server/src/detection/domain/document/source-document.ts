@@ -6,8 +6,32 @@ export interface MetaEntry {
   flagged?: boolean;
 }
 
+// emplacement d'un fichier source dans le texte concaténé d'un projet
+export interface ProjectFile {
+  path: string;
+  extension: string | null;
+  start: number;
+  end: number;
+}
+
+export interface ProjectCommit {
+  author: string;
+  email: string;
+  message: string;
+}
+
+export interface ProjectFacts {
+  files: ProjectFile[];
+  sourceFiles: number;
+  assistantFiles: string[];
+  // undefined : pas de dossier .git dans l'archive
+  commits?: ProjectCommit[];
+  gitError?: string;
+}
+
 export interface SourceDocument {
   kind: DocKind;
+  project?: ProjectFacts;
   filename: string | null;
   mimetype: string | null;
   size: number;

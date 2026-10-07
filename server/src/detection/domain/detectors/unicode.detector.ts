@@ -61,7 +61,7 @@ export class UnicodeDetector implements SignalDetector {
         category: 'unicode',
         label: `Caractères invisibles (largeur nulle) : ${zwFiltered.length}`,
         detail:
-          'Espaces de largeur nulle (ZWSP, ZWJ, WJ…) : invisibles, jamais tapés au clavier. Certains générateurs en insèrent comme filigrane ; ils proviennent aussi de copier-coller de pages web. Indice sérieux, pas une preuve.',
+          "Espaces de largeur nulle (ZWSP, ZWJ, WJ…) : invisibles, jamais tapés au clavier. Certains outils en insèrent pour marquer un texte ; ils proviennent aussi de copier-coller de pages web. Ce n'est pas le filigrane officiel de Claude, ChatGPT ou Gemini, qui ne passe par aucun caractère. Indice sérieux, pas une preuve.",
         strength: 'moyen',
         direction: 'ia',
         points: zwFiltered.length >= 3 ? 18 : 10,
@@ -85,7 +85,7 @@ export class UnicodeDetector implements SignalDetector {
         category: 'unicode',
         label: 'Message caché en caractères « tags » Unicode',
         detail:
-          "Suite de caractères invisibles qui encodent du texte ASCII caché (technique de filigrane ou d'injection d'instructions). Message décodé ci-dessous.",
+          "Suite de caractères invisibles qui encodent du texte ASCII caché (marquage ajouté par un outil, ou injection d'instructions). Message décodé ci-dessous.",
         strength: 'fort',
         direction: 'ia',
         points: 25,
@@ -107,7 +107,7 @@ export class UnicodeDetector implements SignalDetector {
         category: 'unicode',
         label: 'Sélecteurs de variante isolés',
         detail:
-          'Caractères invisibles normalement réservés aux émojis, ici seuls : technique connue pour cacher des données (filigrane) dans un texte.',
+          'Caractères invisibles normalement réservés aux émojis, ici seuls : technique connue pour cacher des données dans un texte.',
         strength: 'moyen',
         direction: 'ia',
         points: 15,

@@ -12,7 +12,7 @@ export interface OriginScore {
   vendor?: Vendor;
 }
 
-const DECLARATIONS = new Set(['meta-ai-name', 'meta-c2pa']);
+const DECLARATIONS = new Set(['meta-ai-name', 'meta-c2pa', 'project-git-assistant']);
 const DECLARED_SHARE = 0.85;
 const STRENGTH_FACTOR: Record<Signal['strength'], number> = { fort: 3, moyen: 2, faible: 1, info: 0.5 };
 

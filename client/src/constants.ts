@@ -7,7 +7,7 @@ export const IA_RING_GRADIENT =
 export const PRIMARY = '#7c3aed';
 
 export const ACCEPT =
-  '.pdf,.docx,.txt,.text,.md,.markdown,.mdx,.rst,.csv,.log,.js,.mjs,.cjs,.ts,.tsx,.jsx,.py,.java,.kt,.cs,.c,.h,.cpp,.hpp,.go,.rs,.rb,.php,.swift,.dart,.lua,.r,.sql,.sh,.bash,.zsh,.ps1,.bat,.html,.htm,.css,.scss,.vue,.svelte,.json,.yaml,.yml,.toml,.xml,.ipynb';
+  '.zip,.pdf,.docx,.txt,.text,.md,.markdown,.mdx,.rst,.csv,.log,.js,.mjs,.cjs,.ts,.tsx,.jsx,.py,.java,.kt,.cs,.c,.h,.cpp,.hpp,.go,.rs,.rb,.php,.swift,.dart,.lua,.r,.sql,.sh,.bash,.zsh,.ps1,.bat,.html,.htm,.css,.scss,.vue,.svelte,.json,.yaml,.yml,.toml,.xml,.ipynb';
 
 export function scoreColor(pct: number): string {
   if (pct >= 85) return '#cf1322';
@@ -18,6 +18,7 @@ export function scoreColor(pct: number): string {
 }
 
 export const CATEGORY_LABELS: Record<SignalCategory, string> = {
+  project: 'Projet et historique git',
   metadata: 'Métadonnées du fichier',
   artefact: 'Artefacts de chatbot',
   unicode: 'Caractères cachés',
@@ -25,9 +26,11 @@ export const CATEGORY_LABELS: Record<SignalCategory, string> = {
   code: 'Code source',
   style: "Style d'écriture",
   stats: 'Statistiques de rythme',
+  watermark: "Filigrane de l'éditeur",
 };
 
 export const CATEGORY_HINTS: Record<SignalCategory, string> = {
+  project: "Preuve technique : fichiers d'assistant et commits signés",
   metadata: 'Preuve technique : fiable si présente, mais effaçable',
   artefact: 'Preuve technique : déchets de copier-coller depuis un chatbot',
   unicode: 'Preuve technique : caractères invisibles ou déguisés',
@@ -35,6 +38,7 @@ export const CATEGORY_HINTS: Record<SignalCategory, string> = {
   code: 'Indice : habitudes des assistants de code',
   style: 'Indice : tendance, jamais une preuve',
   stats: 'Indice : tendance, peu fiable sur texte court',
+  watermark: "Information : lisible seulement par l'éditeur de l'IA",
 };
 
 export const STRENGTH_COLORS: Record<Strength, string> = {

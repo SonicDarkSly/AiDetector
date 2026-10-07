@@ -1,5 +1,6 @@
 export type DocKind = 'text' | 'pdf' | 'docx' | 'txt' | 'md' | 'code';
-export type SignalCategory = 'metadata' | 'artefact' | 'unicode' | 'model' | 'style' | 'stats' | 'code';
+export type SignalCategory =
+  'project' | 'metadata' | 'artefact' | 'unicode' | 'model' | 'style' | 'stats' | 'code' | 'watermark';
 export type Strength = 'fort' | 'moyen' | 'faible' | 'info';
 export type Direction = 'ia' | 'humain' | 'neutre';
 export type Vendor =

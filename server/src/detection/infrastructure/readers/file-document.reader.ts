@@ -8,6 +8,10 @@ import {
 import { readDocx } from './docx.reader.js';
 import { readPdf } from './pdf.reader.js';
 import { readPlainText, looksLikeText } from './plain-text.reader.js';
+import { readProject } from './project.reader.js';
+
+export const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
+export const MAX_ARCHIVE_BYTES = 100 * 1024 * 1024;
 
 const TEXT_EXT = new Set(['txt', 'text', 'log', 'csv', 'tsv', 'rtf', 'srt', 'vtt']);
 const MD_EXT = new Set(['md', 'markdown', 'mdx', 'rst', 'adoc']);
@@ -74,6 +78,12 @@ export class FileDocumentReader implements DocumentReader {
     const mime = (file.mimetype || '').toLowerCase();
     const isZip = file.buffer[0] === 0x50 && file.buffer[1] === 0x4b;
 
+    if (isZip && ext === 'zip') return readProject(file);
+    if (file.buffer.length > MAX_DOCUMENT_BYTES) {
+      throw new UnreadableDocumentError(
+        'Fichier trop volumineux (25 Mo au maximum, 100 Mo pour une archive .zip).',
+      );
+    }
     if (ext === 'pdf' || mime.includes('pdf') || file.buffer.subarray(0, 5).toString('latin1') === '%PDF-') {
       return readPdf(file);
     }
@@ -83,9 +93,9 @@ export class FileDocumentReader implements DocumentReader {
         'Ancien format .doc non pris en charge : ouvrez-le dans Word et enregistrez-le en .docx.',
       );
     }
-    if (isZip && ['odt', 'pages', 'xlsx', 'pptx', 'zip'].includes(ext)) {
+    if (isZip && ['odt', 'pages', 'xlsx', 'pptx'].includes(ext)) {
       throw new UnreadableDocumentError(
-        `Format .${ext} non pris en charge (PDF, DOCX, TXT, Markdown ou code).`,
+        `Format .${ext} non pris en charge (PDF, DOCX, TXT, Markdown, code ou projet .zip).`,
       );
     }
     if (MD_EXT.has(ext)) return readPlainText(file, 'md', ext);
@@ -94,7 +104,7 @@ export class FileDocumentReader implements DocumentReader {
       return readPlainText(file, 'txt', ext || null);
     }
     throw new UnreadableDocumentError(
-      'Format non pris en charge. Formats acceptés : PDF, DOCX, TXT, Markdown, code source.',
+      'Format non pris en charge. Formats acceptés : PDF, DOCX, TXT, Markdown, code source, projet .zip.',
     );
   }
 }

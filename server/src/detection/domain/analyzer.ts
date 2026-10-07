@@ -18,6 +18,7 @@ const MAX_ANALYZED_CHARS = 400_000;
 const MAX_DISPLAY_CHARS = 60_000;
 
 const CATEGORY_ORDER: Signal['category'][] = [
+  'project',
   'metadata',
   'artefact',
   'unicode',
@@ -25,6 +26,7 @@ const CATEGORY_ORDER: Signal['category'][] = [
   'code',
   'style',
   'stats',
+  'watermark',
 ];
 const STRENGTH_ORDER: Signal['strength'][] = ['fort', 'moyen', 'faible', 'info'];
 

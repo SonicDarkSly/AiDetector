@@ -42,8 +42,8 @@ import {
 import type { LanguageModelInfo, ModelActivity } from '../domain/likelihood/likelihood-scorer.js';
 import type { AnalysisSnapshot, AnalysisSummary } from '../domain/analysis.js';
 import { UnreadableDocumentError } from '../domain/document/document-reader.js';
+import { MAX_ARCHIVE_BYTES } from '../infrastructure/readers/file-document.reader.js';
 
-const MAX_FILE_BYTES = 25 * 1024 * 1024;
 const MAX_TEXT_CHARS = 400_000;
 
 @Controller('api')
@@ -121,7 +121,7 @@ export class AnalysisController {
   }
 
   @Post('analyze/file')
-  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_FILE_BYTES } }))
+  @UseInterceptors(FileInterceptor('file', { limits: { fileSize: MAX_ARCHIVE_BYTES } }))
   async analyzeFile(
     @Req() req: Request,
     @UploadedFile() file: Express.Multer.File | undefined,
