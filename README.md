@@ -1,5 +1,7 @@
 # MefIAnce
 
+**Français** · [English](README.en.md) · [Deutsch](README.de.md)
+
 Application locale pour savoir si un texte ou un fichier vient d'une IA (ChatGPT, Claude, Gemini, Copilot,
 DeepSeek, Grok, Perplexity, Vibe de Mistral, Meta AI, Qwen...), et laquelle quand c'est possible.
 Tout est analysé sur la machine : aucun texte ni fichier n'est envoyé sur Internet.
